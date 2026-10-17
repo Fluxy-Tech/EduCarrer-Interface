@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authClient } from "@/lib/auth/auth-client";
+import { APIError } from "better-auth/api";
 import { auth } from "@/lib/auth/auth";
 import { ResetPassword } from "@/lib/services/resetPassword";
 
@@ -24,6 +24,19 @@ export async function POST(req: Request) {
     { status: status ? 200 : 400 }
     );
   } catch (e: any) {
+    // O better-auth lança APIError para token inválido/expirado ou senha fora do tamanho permitido
+    if (e instanceof APIError) {
+      return NextResponse.json(
+        {
+          status: false,
+          message: e.body?.code === "INVALID_TOKEN"
+            ? "Este link de redefinição é inválido ou expirou. Solicite um novo link."
+            : e.body?.message ?? "Erro ao atualizar senha"
+        },
+        { status: 400 }
+      );
+    }
+
     console.error(e);
 
     return NextResponse.json(
@@ -35,4 +48,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

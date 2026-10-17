@@ -18,6 +18,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
+    resetPasswordTokenExpiresIn: 60 * 60, // 1 hora (mantenha em sincronia com checkIfUserHaveSolicitationOpend)
     sendResetPassword: async ({ user, url, token }) => {
       sendEmailUser(
         user.email,

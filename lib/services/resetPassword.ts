@@ -39,7 +39,8 @@ export class ResetPassword {
             }
         }
 
-        const resSendEmail = await hundleResetPasswordByEmailUser(user.email, this.baseUrlSystem);
+        // O better-auth redireciona para `${redirectTo}/${token}?token=...` (ver link montado em sendEmailUser)
+        const resSendEmail = await hundleResetPasswordByEmailUser(user.email, `${this.baseUrlSystem}/reset-password`);
 
         return {
             status: resSendEmail.status,
@@ -67,9 +68,10 @@ export class ResetPassword {
 
             const dateTimeOpend = reset.createdAt;
 
-            if (checkIfTheDateTimeHasPassedACertainNumberOfDays(dateTimeOpend, 2)) {
+            // 1/24 dia = 1 hora, mesmo tempo de expiração do token (resetPasswordTokenExpiresIn em auth.ts)
+            if (checkIfTheDateTimeHasPassedACertainNumberOfDays(dateTimeOpend, 1 / 24)) {
 
-                // Atualizando na base o reset como concluido por conta dos dias
+                // Atualizando na base o reset como concluido por conta do token expirado
                 resetPasswordRepository.updateResetPassWord({ completed: true }, reset.id);
             } else {
                 resetsOpened.push(reset);
