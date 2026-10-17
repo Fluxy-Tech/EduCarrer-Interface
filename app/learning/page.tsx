@@ -1,19 +1,11 @@
 "use client"
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-
-import { ChevronDown, Search, CalendarIcon, X, Trash } from "lucide-react";
+import Link from "next/link";
+import { BookOpenCheck, CalendarIcon, Layers, Search, Sparkles, Trophy, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useStudies } from "@/app/services/study.swr";
-import { getAvaliationsByUserIdAndStudyId, createAvaliation, updateAvaliation } from "@/app/services/avaliations.swr";
 
 import CadsStudy from "@/components/cards/card-study";
-import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,7 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+import { getRank, getStudyProgress } from "@/lib/utils/studyLevels";
 
 import {
   InputGroup,
@@ -38,7 +30,7 @@ function parseLocalDate(value: string) {
 }
 
 export default function DashboardPage() {
-  const { studies } = useStudies();
+  const { studies, isLoading } = useStudies();
 
   const [search, setSearch] = useState("")
   const [dateFilter, setDateFilter] = useState("")
@@ -54,12 +46,14 @@ export default function DashboardPage() {
     if (!studies) return []
 
     return studies.filter((study) => {
-      const matchesSearch = study.title
-        .toLowerCase()
-        .includes(search.toLowerCase())
+      const term = search.toLowerCase()
+      const matchesSearch =
+        study.title.toLowerCase().includes(term) ||
+        (study.vacancy?.title ?? "").toLowerCase().includes(term) ||
+        (study.vacancy?.company ?? "").toLowerCase().includes(term)
 
       const studyDate = study.createdAt
-        ? new Date(study.createdAt).toISOString().split("T")[0]
+        ? format(new Date(study.createdAt), "yyyy-MM-dd")
         : ""
 
       const matchesDate =
@@ -69,67 +63,157 @@ export default function DashboardPage() {
     })
   }, [studies, search, dateFilter])
 
+  // Consolidado de todas as trilhas do usuário
+  const summary = useMemo(() => {
+    const all = studies.map((s) => getStudyProgress(s.sections ?? []))
+    const levels = all.reduce((acc, p) => acc + p.completed, 0)
+
+    return {
+      xp: all.reduce((acc, p) => acc + p.xp, 0),
+      levels,
+      finished: all.filter((p) => p.finished).length,
+      rank: getRank(Math.floor(levels / Math.max(studies.length, 1))),
+    }
+  }, [studies])
+
+  const stats = [
+    { icon: Sparkles, label: "XP acumulado", value: summary.xp.toLocaleString("pt-BR") },
+    { icon: Layers, label: "Níveis concluídos", value: summary.levels },
+    { icon: BookOpenCheck, label: "Trilhas ativas", value: studies.length },
+    { icon: Trophy, label: "Trilhas finalizadas", value: summary.finished },
+  ]
+
   return (
-    <div className="w-full min-h-full flex flex-col gap-4">
-      <div className="flex gap-4 flex-col lg:flex-row items-stretch lg:items-center bg-white rounded-lg shadow-lg p-4">
+    <div className="w-full flex flex-col gap-8">
 
-        <InputGroup className="border-zinc-200">
-          <InputGroupInput
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome do estudo..."
-            className="text-black! placeholder:text-black" />
-          <InputGroupAddon>
-            <Search className="text-black!" />
-          </InputGroupAddon>
-        </InputGroup>
+      {/* Painel de desempenho */}
+      <section className="relative overflow-hidden rounded-3xl bg-ink-gradient p-6 sm:p-8 lg:p-10 text-white animate-rise">
+        <div className="pointer-events-none absolute inset-0 bg-grid [mask-image:linear-gradient(to_left,black,transparent_80%)]" />
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full lg:max-w-55 border-zinc-200! border justify-start text-left font-normal text-black!"
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateFilter
-                ? format(parseLocalDate(dateFilter)!, "dd/MM/yyyy")
-                : "Selecione uma data"}
+        <div className="relative grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-end">
+          <div>
+            <p className="eyebrow text-gold">Seu desempenho</p>
+            <h2 className="mt-3 font-display text-4xl sm:text-5xl leading-[1.05]">
+              Patente atual: <em className="text-gold-gradient">{summary.rank}</em>
+            </h2>
+            <p className="mt-4 max-w-lg text-white/60 leading-relaxed">
+              Cada estudo é uma trilha com níveis. Leia o conteúdo, responda 5 perguntas e libere o próximo nível até dominar a vaga.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {stats.map((s) => (
+              <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-sm">
+                <s.icon className="size-4 text-gold" />
+                <p className="mt-3 text-2xl font-extrabold tabular-nums">{s.value}</p>
+                <p className="text-xs text-white/50">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Filtros */}
+      <section className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-display text-3xl text-ink">Suas trilhas</h2>
+            <p className="text-sm text-muted-foreground">
+              {filteredStudies.length} de {studies.length} estudo{studies.length === 1 ? "" : "s"}
+            </p>
+          </div>
+        </div>
+
+        <div className="surface flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
+          <InputGroup className="h-11 rounded-xl border-input bg-white">
+            <InputGroupInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por estudo, vaga ou empresa..."
+              className="text-ink placeholder:text-muted-foreground/70" />
+            <InputGroupAddon>
+              <Search className="text-muted-foreground" />
+            </InputGroupAddon>
+          </InputGroup>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full lg:w-56 justify-start font-medium"
+              >
+                <CalendarIcon className="text-brand" />
+                {dateFilter
+                  ? format(parseLocalDate(dateFilter)!, "dd/MM/yyyy")
+                  : "Data de criação"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={parseLocalDate(dateFilter)}
+                className="text-ink"
+                onSelect={(date) =>
+                  setDateFilter(date ? format(date, "yyyy-MM-dd") : "")
+                }
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Button
+            variant="ghost"
+            onClick={clearFilters}
+            disabled={!hasActiveFilters}
+            className="text-muted-foreground"
+          >
+            <X />
+            Limpar filtros
+          </Button>
+        </div>
+      </section>
+
+      {/* Lista */}
+      {isLoading ? (
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-[340px] rounded-2xl border border-border bg-white overflow-hidden">
+              <div className="h-24 bg-muted" />
+              <div className="p-6 space-y-3">
+                <div className="h-4 w-1/3 rounded bg-muted" />
+                <div className="h-6 w-4/5 rounded bg-muted" />
+                <div className="h-6 w-2/3 rounded bg-muted" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredStudies.length === 0 ? (
+        <div className="surface flex flex-col items-center gap-4 px-6 py-16 text-center">
+          <span className="grid place-items-center size-14 rounded-2xl bg-brand-soft text-brand">
+            <BookOpenCheck className="size-6" />
+          </span>
+          <div>
+            <h3 className="font-display text-2xl text-ink">
+              {hasActiveFilters ? "Nenhum estudo encontrado" : "Você ainda não tem trilhas"}
+            </h3>
+            <p className="mt-1 max-w-md text-sm text-muted-foreground">
+              {hasActiveFilters
+                ? "Ajuste a busca ou limpe os filtros para ver todos os seus estudos."
+                : "Escolha uma vaga e gere um estudo personalizado para começar a subir de nível."}
+            </p>
+          </div>
+          {!hasActiveFilters && (
+            <Button asChild variant="create">
+              <Link href="/jobs">Explorar vagas</Link>
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={parseLocalDate(dateFilter)}
-              className="text-black!"
-              onSelect={(date) =>
-                setDateFilter(date ? format(date, "yyyy-MM-dd") : "")
-              }
-            />
-          </PopoverContent>
-        </Popover>
-
-        <Button
-          variant="ghost"
-          onClick={clearFilters}
-          disabled={!hasActiveFilters}
-          className="text-white bg-red-500!"
-        >
-          <Trash strokeWidth={2} className="h-4 w-4" />
-          Limpar filtros
-        </Button>
-      </div>
-
-      <div className="border flex flex-col gap-4 rounded-lg overflow-hidden bg-white shadow-lg p-4">
-        {filteredStudies.length === 0 ? (
-          <p className="text-center text-black">Nenhum estudo encontrado.</p>
-        ) : (
-          filteredStudies.map((study, index) => {
-            return (
-              <CadsStudy key={study.id} study={study} />
-            );
-          })
-        )}
-      </div>
-    </div >
+          )}
+        </div>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 stagger">
+          {filteredStudies.map((study) => (
+            <CadsStudy key={study.id} study={study} />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

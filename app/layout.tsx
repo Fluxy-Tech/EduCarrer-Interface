@@ -1,14 +1,21 @@
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
-import { Poppins } from 'next/font/google'
+import { Instrument_Serif, Manrope } from 'next/font/google'
 
 import '../styles/globals.css'
 import { Toaster } from "@/components/ui/sonner"
 
-const poppins = Poppins({
+const manrope = Manrope({
   subsets: ['latin'],
-  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
-  variable: '--font-poppins',
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-manrope',
+})
+
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: ['400'],
+  style: ['normal', 'italic'],
+  variable: '--font-instrument',
 })
 
 export const metadata: Metadata = {
@@ -24,8 +31,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR">
-      <body className={`${poppins.className} antialiased dark`} cz-shortcut-listen="true">
+    <html lang="pt-BR" className={`${manrope.variable} ${instrumentSerif.variable}`}>
+      <body className="font-sans antialiased" cz-shortcut-listen="true">
         {children}
         <Analytics />
         <Toaster />

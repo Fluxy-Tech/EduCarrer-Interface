@@ -1,29 +1,20 @@
-import {
-    Card,
-    CardContent,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-    Command,
-    CommandDialog
-} from "@/components/ui/command";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, SquarePen, Calendar } from "lucide-react";
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, Trash2, SquarePen, CalendarClock } from "lucide-react";
 import { DialogSkillUpdate } from "@/components/dialog/dialog-skill.update";
 import { useState } from "react";
 import { ToastPersonalizado } from "@/components/toast";
 import { Skill, deleteSkill, useSkills } from "@/app/services/skills.swr"
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useViewPort } from "@/components/viewport";
 import TooltipPerso from "@/components/tooltip";
+import { cn } from "@/lib/utils";
 
 interface DialogSkillProps {
-    skill: Skill,
-    key: string
+    skill: Skill
 }
 
 export default function CadsSkill({ skill }: DialogSkillProps) {
@@ -31,7 +22,6 @@ export default function CadsSkill({ skill }: DialogSkillProps) {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [openUpdate, setOpenUpdate] = useState(false);
     const { refresh } = useSkills();
-    const { isMobile, isTablet } = useViewPort();
 
     const handleDelete = async () => {
         try {
@@ -48,156 +38,104 @@ export default function CadsSkill({ skill }: DialogSkillProps) {
     }
 
     return (
-        <Card key={skill.id} className="w-full flex flex-row items-center p-4 gap-4 rounded-2xl">
-            <CardContent className="flex flex-col lg:flex-row sm:text-center items-center gap-4 p-0 flex-1">
+        <div className="group grid gap-4 p-5 sm:px-6 transition-colors hover:bg-sky/60 lg:grid-cols-[minmax(160px,220px)_170px_minmax(0,1fr)_auto] lg:items-center">
 
-                {/* Ícone/Nome da tecnologia */}
-                <span className={`w-auto px-4 py-3 rounded-xl flex items-center justify-center ${getTechColor(skill.name)}`}>
-                    <h1 className="text-base font-semibold whitespace-nowrap">
-                        {skill.name}
-                    </h1>
+            {/* Nome da tecnologia */}
+            <div className="flex items-center gap-3 min-w-0">
+                <span className="grid place-items-center size-10 shrink-0 rounded-xl bg-ink text-sm font-bold text-white">
+                    {skill.name.slice(0, 2).toUpperCase()}
                 </span>
-
-                {/* Nível + Badge */}
-                <div className="w-auto flex flex-col items-center justify-center gap-2">
-                    <Badge className={`${getLevelColor(skill.level)}`}>{getLevelAvaliation(skill.level)}</Badge>
-                    <div className="flex gap-1">
-                        <span className={`w-4 h-2 rounded-sm ${skill.level >= 1 ? "bg-orange-500!" : "bg-zinc-300!"}`}></span>
-                        <span className={`w-4 h-2 rounded-sm ${skill.level >= 3 ? "bg-orange-500!" : "bg-zinc-300!"}`}></span>
-                        <span className={`w-4 h-2 rounded-sm ${skill.level >= 5 ? "bg-orange-500!" : "bg-zinc-300!"}`}></span>
-                        <span className={`w-4 h-2 rounded-sm ${skill.level >= 7 ? "bg-orange-500!" : "bg-zinc-300!"}`}></span>
-                        <span className={`w-4 h-2 rounded-sm ${skill.level >= 9 ? "bg-orange-500!" : "bg-zinc-300!"}`}></span>
-                    </div>
-                </div>
-
-                {/* Descrição */}
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button onClick={() => setOpen(true)} size={"link"} variant="link_card" className="w-1/4 text-center lg:text-left flex-1 text-sm text-zinc-500 whitespace-normal wrap-break-word">
-                            {skill.about ? `${isMobile ? skill.about.slice(0, 40) : skill.about.slice(0, 100)}...` : "Sem informações"}
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>Clique aqui para ver a descrição completa</p>
-                    </TooltipContent>
-                </Tooltip>
-
-                <CommandDialog open={open} onOpenChange={setOpen}>
-                    <Command className="p-4 flex flex-col gap-4 justify-start items-center text-center max-h-[80vh]">
-                        <h1 className="text-black text-xl font-bold">Descrição da habilidade</h1>
-                        <p className="text-black overflow-y-auto pr-2 text-justify w-full max-h-[60vh]">
-                            {skill.about}
-                        </p>
-                    </Command>
-                </CommandDialog>
-
-                {/* Data atualizada */}
-                <span className="w-full lg:w-1/5 flex text-center lg:text-left justify-center items-center gap-2 text-sm text-zinc-500! whitespace-nowrap">
-                    <Calendar className="hidden lg:block w-4 h-4 text-zinc-500!" />
-                    <span>
-                        Atualizado<br />
-                        {skill.updatedAt ? formatDateTime(skill.updatedAt) : "Não encontramos uma data no momento"}
+                <span className="min-w-0">
+                    <span className="block truncate font-bold text-ink">{skill.name}</span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <CalendarClock className="size-3" />
+                        {skill.updatedAt ? formatDateTime(skill.updatedAt) : "Sem data"}
                     </span>
                 </span>
+            </div>
 
-                <div className={` flex gap-2 ${isMobile ? "flex-col w-full" : "w-auto"} items-center`}>
-                    <TooltipPerso
-                        id="editarestudos"
-                        message="Clique para editar"
-                    >
-                        <Button className={`${isMobile ? "w-full!" : ""}`} variant={"create"} size="icon" onClick={() => setOpenUpdate(true)}>
-                            {isMobile && (
-                                <span className="flex gap-2">
-                                    <SquarePen className="w-4 h-4" />
-                                    Editar habilidade
-                                </span>
-                            )}
-
-                            {!isMobile && (
-                                <SquarePen className="w-4 h-4" />
-                            )}
-
-                        </Button>
-                    </TooltipPerso>
-                    <TooltipPerso
-                        id="excluirrestudos"
-                        message="Clique para excluir"
-                    >
-                        <Button
-                            className={`${isMobile ? "w-full!" : ""}`}
-                            variant={"destructive"}
-                            size="icon"
-                            onClick={() => handleDelete()}
-                            disabled={isLoading}
-                        >
-                            {
-                                isLoading ? (
-                                    <Loader2 className="animate-spin w-4 h-4" />
-                                ) : (
-                                    <>
-                                        {isMobile && (
-                                            <span className="flex gap-2">
-                                                <Trash2 className="w-4 h-4" />
-                                                Deletar habilidade
-                                            </span>
-                                        )}
-
-                                        {!isMobile && (
-                                            <Trash2 className="w-4 h-4" />
-                                        )}
-                                    </>
-
-                                )
-                            }
-                        </Button>
-                    </TooltipPerso>
-
-
+            {/* Nível */}
+            <div>
+                <div className="flex items-center justify-between text-xs">
+                    <span className={cn("font-bold", getLevelColor(skill.level))}>{getLevelAvaliation(skill.level)}</span>
+                    <span className="font-semibold text-muted-foreground tabular-nums">{skill.level}/10</span>
                 </div>
+                <div className="mt-1.5 grid grid-cols-10 gap-0.5">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                        <span key={i} className={cn("h-1.5 rounded-full", i < skill.level ? (skill.level >= 9 ? "bg-gold" : "bg-brand") : "bg-muted")} />
+                    ))}
+                </div>
+            </div>
 
-                <DialogSkillUpdate
-                    skill={skill}
-                    open={openUpdate}
-                    onOpenChange={setOpenUpdate}
-                />
-            </CardContent>
-        </Card>
+            {/* Descrição */}
+            <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className="cursor-pointer text-left text-sm leading-relaxed text-muted-foreground hover:text-brand transition-colors"
+            >
+                <span className="line-clamp-2">{skill.about || "Sem informações"}</span>
+            </button>
+
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogContent className="sm:max-w-xl">
+                    <div>
+                        <p className="eyebrow text-brand">Descrição da habilidade</p>
+                        <DialogTitle className="mt-1 font-display text-3xl font-normal text-ink">{skill.name}</DialogTitle>
+                        <DialogDescription className="sr-only">Descrição completa da habilidade</DialogDescription>
+                    </div>
+                    <p className="max-h-[60vh] overflow-y-auto pr-2 text-sm leading-relaxed text-ink/80">
+                        {skill.about}
+                    </p>
+                </DialogContent>
+            </Dialog>
+
+            <div className="flex gap-2">
+                <TooltipPerso message="Editar habilidade">
+                    <Button className="flex-1 w-auto px-3 lg:flex-none lg:w-10 lg:px-0" variant="outline" size="icon" onClick={() => setOpenUpdate(true)}>
+                        <SquarePen />
+                        <span className="lg:hidden">Editar</span>
+                    </Button>
+                </TooltipPerso>
+                <TooltipPerso message="Excluir habilidade">
+                    <Button
+                        className="flex-1 w-auto px-3 lg:flex-none lg:w-10 lg:px-0"
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDelete()}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                        <span className="lg:hidden">Excluir</span>
+                    </Button>
+                </TooltipPerso>
+            </div>
+
+            <DialogSkillUpdate
+                skill={skill}
+                open={openUpdate}
+                onOpenChange={setOpenUpdate}
+            />
+        </div>
     )
 }
 
-// Formata data e hora: dd/MM/yyyy HH:mm
+// Formata data: dd/MM/yyyy
 function formatDateTime(date: null | Date): string {
 
-    if (!date) return "Não encontramos uma data no momento"
+    if (!date) return "Sem data"
 
     const d = new Date(date);
 
     if (isNaN(d.getTime())) return "Data inválida";
 
-    const dia = String(d.getDate()).padStart(2, "0");
-    const mes = String(d.getMonth() + 1).padStart(2, "0");
-    const ano = d.getFullYear();
-    const horas = String(d.getHours()).padStart(2, "0");
-    const minutos = String(d.getMinutes()).padStart(2, "0");
-
-    return `${dia}/${mes}/${ano} ${horas}:${minutos}`;
+    return d.toLocaleDateString("pt-BR");
 }
 
 function getLevelColor(level: number): string {
-    const map: Record<string, string> = {
-        1: "bg-red-100 text-red-600 border-red-500 px-3 py-1",
-        2: "bg-red-100 text-red-600 border-red-500 px-3 py-1",
-        3: "bg-red-100 text-red-600 border-red-500 px-3 py-1",
-        4: "bg-purple-100 text-purple-600 border-purple-600 px-3 py-1",
-        5: "bg-purple-100 text-purple-600 border-purple-600 px-3 py-1",
-        6: "bg-purple-100 text-purple-600 border-purple-600 px-3 py-1",
-        7: "bg-blue-100 text-blue-600 border-blue-600 px-3 py-1",
-        8: "bg-blue-100 text-blue-600 border-blue-600 px-3 py-1",
-        9: "bg-green-100 text-green-600 border-green-600 px-3 py-1",
-        10: "bg-green-100 text-green-600 border-green-600 px-3 py-1",
-        "default": "bg-zinc-100 text-zinc-600 border-zinc-500 px-3 py-1"
-    };
-    return map[level] || map["default"];
+    if (level >= 9) return "text-gold";
+    if (level >= 7) return "text-brand";
+    if (level >= 4) return "text-ink-3";
+    return "text-muted-foreground";
 }
 
 function getLevelAvaliation(level: number): string {
@@ -210,47 +148,9 @@ function getLevelAvaliation(level: number): string {
         6: "Intermediário",
         7: "Profissional",
         8: "Profissional",
-        9: "Experte",
-        10: "Experte",
+        9: "Especialista",
+        10: "Especialista",
         "default": "Não identificado"
     };
     return map[level] || map["default"];
-}
-
-function getTechColor(tech: string): string {
-    const map: Record<string, string> = {
-        "React": "bg-blue-500 text-white",
-        "JavaScript": "bg-yellow-400 text-black",
-        "TypeScript": "bg-blue-600 text-white",
-        "HTML": "bg-orange-500 text-white",
-        "CSS": "bg-blue-400 text-white",
-        "Node.js": "bg-green-600 text-white",
-        "Java": "bg-orange-600 text-white",
-        "Spring Boot": "bg-green-700 text-white",
-        ".NET": "bg-purple-600 text-white",
-        "C#": "bg-purple-700 text-white",
-        "PHP": "bg-indigo-500 text-white",
-        "Laravel": "bg-red-500 text-white",
-        "Go": "bg-cyan-500 text-white",
-        "React Native": "bg-blue-500 text-white",
-        "Flutter": "bg-sky-500 text-white",
-        "Python": "bg-blue-800 text-white",
-        "Pandas": "bg-purple-500 text-white",
-        "SQL": "bg-gray-600 text-white",
-        "Power BI": "bg-yellow-600 text-black",
-        "Machine Learning": "bg-pink-500 text-white",
-        "TensorFlow": "bg-orange-600 text-white",
-        "PyTorch": "bg-red-500 text-white",
-        "Docker": "bg-blue-700 text-white",
-        "Kubernetes": "bg-indigo-600 text-white",
-        "AWS": "bg-orange-400 text-black",
-        "Azure": "bg-blue-700 text-white",
-        "Cypress": "bg-green-500 text-white",
-        "Google Cloud": "bg-green-500 text-white",
-        "Selenium": "bg-lime-600 text-white",
-        "Postman": "bg-orange-500 text-white",
-        "Git": "bg-orange-500 text-white",
-        "default": "bg-black text-white"
-    };
-    return map[tech] || map["default"];
 }

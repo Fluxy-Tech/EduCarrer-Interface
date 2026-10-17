@@ -136,7 +136,7 @@ export function DialogVacncyCreate() {
             {label && <Label className="text-xs font-semibold text-zinc-600!">{label}</Label>}
             {children}
             {error && (
-                <span className="text-red-500! text-[11px] flex items-center gap-1 mt-0.5">
+                <span className="text-danger! text-[11px] flex items-center gap-1 mt-0.5">
                     <AlertCircle size={12} /> {error}
                 </span>
             )}
@@ -277,7 +277,7 @@ export function DialogVacncyCreate() {
                             </SectionLabel>
 
                             {errors.technologies?.message && (
-                                <p className="text-red-500! text-xs mb-2 flex items-center gap-1">
+                                <p className="text-danger! text-xs mb-2 flex items-center gap-1">
                                     <AlertCircle size={12} /> {errors.technologies.message}
                                 </p>
                             )}
@@ -348,7 +348,7 @@ export function DialogVacncyCreate() {
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
                                         id="active"
-                                        className="shrink-0 bg-white! border-zinc-300! data-[state=checked]:bg-green-600! data-[state=checked]:border-green-600! focus:ring-0 h-4 w-4 rounded"
+                                        className="shrink-0 bg-white! border-zinc-300! data-[state=checked]:bg-brand! data-[state=checked]:border-brand! focus:ring-0 h-4 w-4 rounded"
                                     />
                                 )}
                             />

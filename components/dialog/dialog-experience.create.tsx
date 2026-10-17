@@ -89,7 +89,7 @@ export function DialogExperienceCreate() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="w-full bg-purple-50 border-purple-500! text-purple-500!" variant="dashed">
+                <Button className="w-full" variant="dashed">
                     <Plus />
                     Adicionar Experiência
                 </Button>
@@ -121,7 +121,7 @@ export function DialogExperienceCreate() {
                             })}
                         />
                         {errors.nome && (
-                            <p className="mt-1 text-sm text-red-500">{errors.nome.message}</p>
+                            <p className="mt-1 text-sm text-danger">{errors.nome.message}</p>
                         )}
                     </div>
 
@@ -148,7 +148,7 @@ export function DialogExperienceCreate() {
                             )}
                         />
                         {errors.senioridade && (
-                            <p className="mt-1 text-sm text-red-500">{errors.senioridade.message}</p>
+                            <p className="mt-1 text-sm text-danger">{errors.senioridade.message}</p>
                         )}
                     </div>
 
@@ -166,7 +166,7 @@ export function DialogExperienceCreate() {
                             })}
                         />
                         {errors.descricao && (
-                            <p className="mt-1 text-sm text-red-500">{errors.descricao.message}</p>
+                            <p className="mt-1 text-sm text-danger">{errors.descricao.message}</p>
                         )}
                     </div>
 

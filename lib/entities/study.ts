@@ -1,3 +1,5 @@
+import { VacancyDTO } from "@/lib/interfaces/vacancy.interface";
+
 export class Study {
   constructor(
     public id: string,
@@ -5,7 +7,7 @@ export class Study {
     public sections: StudySection[],
     public createdAt: Date | null,
     public updatedAt: Date | null,
-    public vacancy: string,
+    public vacancy: VacancyDTO | null,
     public userId: string
   ) {}
 }
@@ -20,7 +22,11 @@ export class StudySection {
     public strengths: StudyStrength[],
     public gaps: StudyGap[],
     public plans: StudyPlan[],
-    public createdAt: Date | null
+    public createdAt: Date | null,
+    public completed: boolean = false,
+    public completedAt: Date | null = null,
+    public bestScore: number = 0,
+    public attempts: number = 0
   ) {}
 }
 

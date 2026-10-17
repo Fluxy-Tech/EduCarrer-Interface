@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { VacancyDTO } from "@/lib/interfaces/vacancy.interface";
 // GET
 export interface StudyDTO {
   id: string;
@@ -6,7 +7,7 @@ export interface StudyDTO {
   sections: StudySectionDTO[];
   createdAt?: Date | null;
   updatedAt?: Date | null;
-  vacancy: string;
+  vacancy?: VacancyDTO | null;
   userId: string;
 }
 
@@ -20,6 +21,10 @@ export interface StudySectionDTO {
   gaps: StudyGapDTO[];
   plans: StudyPlanDTO[];
   createdAt?: Date | null;
+  completed: boolean;
+  completedAt?: Date | null;
+  bestScore: number;
+  attempts: number;
 }
 
 export interface StudyStrengthDTO {
@@ -91,4 +96,31 @@ export interface CreateStudyPlanDTO {
   week: number;
   focus: string;
   goals: string;
+}
+
+// QUIZ (gamificação dos níveis)
+export interface StudyQuestionDTO {
+  id: string;
+  sectionId: string;
+  position: number;
+  question: string;
+  options: string[];
+  answerIndex: number;
+  explanation: string;
+}
+
+export interface CreateStudyQuestionDTO {
+  sectionId: string;
+  position: number;
+  question: string;
+  options: string[];
+  answerIndex: number;
+  explanation: string;
+}
+
+export interface UpdateStudySectionProgressDTO {
+  completed?: boolean;
+  completedAt?: Date | null;
+  bestScore?: number;
+  attempts?: number;
 }

@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "@/lib/auth/auth-client"
+import { BrandMark } from "@/components/brand-mark"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = useSession()
@@ -16,10 +17,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (isPending) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-          <p className="mt-4 text-muted-foreground">Carregando...</p>
+      <div className="flex items-center justify-center min-h-screen bg-ink-gradient">
+        <div className="flex flex-col items-center gap-6 animate-pop">
+          <BrandMark />
+          <div className="h-1 w-40 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full w-full shimmer" />
+          </div>
         </div>
       </div>
     )

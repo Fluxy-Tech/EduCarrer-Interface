@@ -1,9 +1,4 @@
-"use client"
-
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
-import { AuthProvider } from "@/components/auth-provider"
-import { Toaster } from "@/components/ui/sonner"
+import { AppShell } from "@/components/app-shell"
 
 export default function DashboardLayout({
   children,
@@ -11,26 +6,12 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <AuthProvider>
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full">
-          <AppSidebar />
-          <main className="flex-1 flex flex-col min-h-screen">
-
-            <div className="sticky top-0! z-10 bg-white flex items-center justify-start px-4">
-              <div className="flex py-4 items-center text-black mr-2">
-                <SidebarTrigger size={"lg"} className="text-blue-600"/>
-              </div>
-              <div className="text-black block items-start md:flex md:flex-col">
-                <h1 className="font-semibold text-md">Perfil</h1>
-                <p className="text-zinc-500 text-sm">Gerencie suas informações pessoais</p>
-              </div>
-            </div>
-
-            <div className="p-6 h-full w-full bg-sky-50 border-t border-zinc-300">{children}</div>
-          </main>
-        </div>
-      </SidebarProvider>
-    </AuthProvider>
+    <AppShell
+      eyebrow="Seu perfil"
+      title="Perfil profissional"
+      description="Mantenha suas habilidades e experiências atualizadas para receber estudos e vagas mais precisos."
+    >
+      {children}
+    </AppShell>
   )
 }

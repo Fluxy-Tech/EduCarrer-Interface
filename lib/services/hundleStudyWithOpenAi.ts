@@ -2,7 +2,8 @@ import { VacancyDTO } from "@/lib/interfaces/vacancy.interface";
 import { ExperienceDTO } from "@/lib/interfaces/experience.interface";
 import { SkillDTO } from "@/lib/interfaces/skill.interface";
 
-import type { SkillsAndExperienceComparisonResponse } from "@/lib/interfaces/openai.interface";
+import type { SkillsAndExperienceComparisonResponse, GeneratedQuiz } from "@/lib/interfaces/openai.interface";
+import { QUIZ_QUESTIONS_PER_LEVEL } from "@/lib/utils/studyLevels";
 
 import OpenAI from "openai";
 
@@ -341,6 +342,91 @@ export class HundleStudyWithOpenAi {
             return parsed;
 
         } catch (error: any) {
+            return null;
+        }
+    }
+
+    // Gera as 5 perguntas de múltipla escolha que liberam o próximo nível do estudo
+    async createQuizSection(studyTitle: string, sectionTitle: string, sectionContent: string): Promise<GeneratedQuiz | null> {
+        try {
+            const response = await openai.responses.create({
+                model: process.env.OPENAI_QUIZ_MODEL ?? "gpt-4.1-mini",
+                instructions: [
+                    "Você é um avaliador técnico que cria quizzes de fixação para uma plataforma de estudos de carreira.",
+                    `Crie exatamente ${QUIZ_QUESTIONS_PER_LEVEL} perguntas de múltipla escolha em português do Brasil sobre o conteúdo informado.`,
+                    "Cada pergunta deve ter exatamente 4 alternativas, apenas uma correta, e cobrir um ponto diferente do conteúdo.",
+                    "As perguntas devem verificar compreensão e aplicação prática, não apenas memorização de frases.",
+                    "Varie a posição da alternativa correta entre as perguntas.",
+                    "A explicação deve dizer em 1 ou 2 frases por que a alternativa correta está certa."
+                ].join(" "),
+                input: JSON.stringify({
+                    estudo: studyTitle,
+                    secao: sectionTitle,
+                    conteudo: sectionContent
+                }),
+                text: {
+                    format: {
+                        type: "json_schema",
+                        name: "quiz_secao_estudo",
+                        strict: true,
+                        schema: {
+                            type: "object",
+                            properties: {
+                                questions: {
+                                    type: "array",
+                                    minItems: QUIZ_QUESTIONS_PER_LEVEL,
+                                    maxItems: QUIZ_QUESTIONS_PER_LEVEL,
+                                    items: {
+                                        type: "object",
+                                        properties: {
+                                            question: { type: "string" },
+                                            options: {
+                                                type: "array",
+                                                minItems: 4,
+                                                maxItems: 4,
+                                                items: { type: "string" }
+                                            },
+                                            answerIndex: {
+                                                type: "integer",
+                                                description: "Índice (0 a 3) da alternativa correta."
+                                            },
+                                            explanation: { type: "string" }
+                                        },
+                                        required: ["question", "options", "answerIndex", "explanation"],
+                                        additionalProperties: false
+                                    }
+                                }
+                            },
+                            required: ["questions"],
+                            additionalProperties: false
+                        }
+                    }
+                },
+                store: false
+            });
+
+            const raw = response.output_text;
+
+            if (!raw) return null;
+
+            const parsed: GeneratedQuiz = JSON.parse(raw);
+
+            // Garante que o modelo respeitou o formato antes de salvar na base
+            const valid = parsed.questions.filter((q) =>
+                q.question &&
+                Array.isArray(q.options) &&
+                q.options.length == 4 &&
+                Number.isInteger(q.answerIndex) &&
+                q.answerIndex >= 0 &&
+                q.answerIndex < 4
+            );
+
+            if (valid.length < QUIZ_QUESTIONS_PER_LEVEL) return null;
+
+            return { questions: valid.slice(0, QUIZ_QUESTIONS_PER_LEVEL) };
+
+        } catch (error: any) {
+            console.error("Erro ao gerar quiz da seção:", error);
             return null;
         }
     }

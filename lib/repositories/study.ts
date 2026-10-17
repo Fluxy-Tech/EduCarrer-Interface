@@ -17,7 +17,10 @@ import {
     StudyGapDTO,
     StudyPlanDTO,
     StudySectionDTO,
-    StudyStrengthDTO
+    StudyStrengthDTO,
+    StudyQuestionDTO,
+    CreateStudyQuestionDTO,
+    UpdateStudySectionProgressDTO
 } from "@/lib/interfaces/study.interface";
 
 export class StudyRepository {
@@ -86,13 +89,17 @@ export class StudyRepository {
                                     )
                             ),
 
-                            section.createdAt
+                            section.createdAt,
+                            section.completed ?? false,
+                            section.completedAt ?? null,
+                            section.bestScore ?? 0,
+                            section.attempts ?? 0
                         )
                 ),
 
             study.createdAt,
             study.updatedAt,
-            study.vacancy,
+            study.vacancy ?? null,
             study.userId
         );
     }
@@ -104,7 +111,7 @@ export class StudyRepository {
             [],
             study.createdAt,
             study.updatedAt,
-            study.vacancy,
+            study.vacancy ?? null,
             study.userId
         );
     }
@@ -115,7 +122,11 @@ export class StudyRepository {
             where: {
                 userId,
             },
+            orderBy: {
+                createdAt: "desc"
+            },
             include: {
+                vacancy: true,
                 sections: {
                     include: {
                         strengths: true,
@@ -157,6 +168,7 @@ export class StudyRepository {
                 id
             },
             include: {
+                vacancy: true,
                 sections: {
                     include: {
                         strengths: true,
@@ -297,5 +309,57 @@ export class StudyRepository {
     // Coletar a quantidade de estudos que temos cadastrado na base
     async getCountStudyes(): Promise<number> {
         return await prisma.study.count();
+    }
+
+    // Coletar as seções (níveis) de um estudo com o dono, usado para validar acesso e desbloqueio
+    async getStudySectionsProgress(studyId: string) {
+        return await prisma.study.findUnique({
+            where: {
+                id: studyId
+            },
+            select: {
+                id: true,
+                title: true,
+                userId: true,
+                sections: {
+                    include: {
+                        strengths: true,
+                        gaps: true,
+                        plans: true,
+                    }
+                }
+            }
+        });
+    }
+
+    // Coletar as perguntas do quiz de uma seção
+    async getQuestionsBySectionId(sectionId: string): Promise<StudyQuestionDTO[]> {
+        return await prisma.studyQuestion.findMany({
+            where: {
+                sectionId
+            },
+            orderBy: {
+                position: "asc"
+            }
+        });
+    }
+
+    // Criar as perguntas do quiz de uma seção
+    async createQuestions(questions: CreateStudyQuestionDTO[]): Promise<StudyQuestionDTO[]> {
+        await prisma.studyQuestion.createMany({
+            data: questions
+        });
+
+        return await this.getQuestionsBySectionId(questions[0].sectionId);
+    }
+
+    // Atualizar o progresso (nível) de uma seção
+    async updateSectionProgress(sectionId: string, data: UpdateStudySectionProgressDTO) {
+        return await prisma.studySection.update({
+            where: {
+                id: sectionId
+            },
+            data
+        });
     }
 }

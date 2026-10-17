@@ -1,23 +1,19 @@
-import {
-    Card,
-    CardContent,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-    Command,
-    CommandDialog
-} from "@/components/ui/command";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, SquarePen, Calendar } from "lucide-react";
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, Trash2, SquarePen, CalendarDays } from "lucide-react";
 import { useState } from "react";
 import { ToastPersonalizado } from "@/components/toast";
 import { DialogExperienceUpdate } from "@/components/dialog/dialog-experience.update";
 import { deleteExperience, Experience, useExperiences } from "@/app/services/experiences.swr";
 import TooltipPerso from "@/components/tooltip";
-import { useViewPort } from "@/components/viewport";
+
 interface DialogSkillProps {
-    experience: Experience,
-    key: string
+    experience: Experience
 }
 
 export default function CadsExperience({ experience }: DialogSkillProps) {
@@ -25,7 +21,7 @@ export default function CadsExperience({ experience }: DialogSkillProps) {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [openUpdate, setOpenUpdate] = useState(false);
     const { refresh } = useExperiences();
-    const { isMobile, isTablet } = useViewPort();
+
     const handleDelete = async () => {
         try {
             setIsLoading(true)
@@ -41,109 +37,80 @@ export default function CadsExperience({ experience }: DialogSkillProps) {
     }
 
     return (
-        <Card key={experience.id} className="w-full flex flex-row items-center p-4 gap-4 rounded-2xl">
-            <CardContent className="flex flex-col lg:flex-row items-center gap-4 p-0 flex-1">
+        <div className="group grid gap-4 p-5 sm:px-6 transition-colors hover:bg-sky/60 lg:grid-cols-[minmax(220px,300px)_minmax(0,1fr)_auto] lg:items-center">
 
-                {/* Avatar com inicial */}
-                <span className={`w-14 h-14 flex items-center text-center lg:text-left justify-center rounded-xl text-white text-2xl font-bold ${getCompanyColor(experience.name)}`}>
+            {/* Empresa, cargo e período */}
+            <div className="flex items-start gap-4 min-w-0">
+                <span className="grid place-items-center size-12 shrink-0 rounded-2xl bg-gradient-to-br from-brand to-ink-3 text-lg font-bold text-white">
                     {experience.name?.charAt(0).toUpperCase()}
                 </span>
-
-                {/* Nome, cargo e período */}
-                <div className="flex flex-col text-center lg:text-left gap-1 min-w-45">
-                    <h1 className="text-base font-semibold text-black">
-                        {experience.name}
-                    </h1>
-                    <p className="text-sm font-medium text-blue-600">
-                        {experience.seniority}
-                    </p>
-                    <div className="flex items-center gap-2 text-sm text-zinc-500">
-                        <Calendar className="w-4 h-4" />
-                        <span>
-                            {formatPeriod(experience.startDate, experience.endDate, experience.currentJob)}
-                        </span>
+                <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                        <h3 className="truncate font-bold text-ink">{experience.name}</h3>
                         {experience.currentJob && (
-                            <Badge className="bg-green-100 text-green-600 border-green-500 px-2 py-0.5">
+                            <span className="shrink-0 rounded-full bg-success-soft px-2 py-0.5 text-[11px] font-bold text-success">
                                 Atual
-                            </Badge>
+                            </span>
                         )}
                     </div>
+                    <p className="text-sm font-semibold text-brand">{experience.seniority}</p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <CalendarDays className="size-3.5" />
+                        {formatPeriod(experience.startDate, experience.endDate, experience.currentJob)}
+                    </p>
                 </div>
+            </div>
 
-                {/* Descrição */}
-                <Button onClick={() => setOpen(true)} size={"link"} variant="link_card" className="text-center flex-1 text-sm lg:text-left text-zinc-500 whitespace-normal wrap-break-word">
-                    {experience.about ? `${experience.about.slice(0, 100)}...` : "Sem informações"}
-                </Button>
-                <CommandDialog open={open} onOpenChange={setOpen}>
-                    <Command className="p-4 flex flex-col gap-4 justify-start items-center text-center max-h-[80vh]">
-                        <h1 className="text-black text-xl font-bold">Descrição da experiência</h1>
-                        <p className="text-black overflow-y-auto pr-2 text-justify w-full max-h-[60vh]">
-                            {experience.about}
-                        </p>
-                    </Command>
-                </CommandDialog>
+            {/* Descrição */}
+            <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className="cursor-pointer text-left text-sm leading-relaxed text-muted-foreground hover:text-brand transition-colors"
+            >
+                <span className="line-clamp-2">{experience.about || "Sem informações"}</span>
+            </button>
 
-                {/* Ações */}
-                <div className={`flex gap-2 ${isMobile ? "flex-col w-full" : "w-auto"} items-center`}>
-                    <TooltipPerso
-                        id="editarexperiencia"
-                        message="Clique para editar"
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogContent className="sm:max-w-xl">
+                    <div>
+                        <p className="eyebrow text-brand">{experience.seniority}</p>
+                        <DialogTitle className="mt-1 font-display text-3xl font-normal text-ink">{experience.name}</DialogTitle>
+                        <DialogDescription className="sr-only">Descrição completa da experiência</DialogDescription>
+                    </div>
+                    <p className="max-h-[60vh] overflow-y-auto pr-2 text-sm leading-relaxed text-ink/80">
+                        {experience.about}
+                    </p>
+                </DialogContent>
+            </Dialog>
+
+            {/* Ações */}
+            <div className="flex gap-2">
+                <TooltipPerso message="Editar experiência">
+                    <Button className="flex-1 w-auto px-3 lg:flex-none lg:w-10 lg:px-0" variant="outline" size="icon" onClick={() => setOpenUpdate(true)}>
+                        <SquarePen />
+                        <span className="lg:hidden">Editar</span>
+                    </Button>
+                </TooltipPerso>
+                <TooltipPerso message="Excluir experiência">
+                    <Button
+                        className="flex-1 w-auto px-3 lg:flex-none lg:w-10 lg:px-0"
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDelete()}
+                        disabled={isLoading}
                     >
-                        <Button className={`${isMobile ? "w-full!" : ""}`} variant={"create"} size="icon" onClick={() => setOpenUpdate(true)}>
-                            {isMobile && (
-                                <span className="flex gap-2">
-                                    <SquarePen className="w-4 h-4" />
-                                    Editar experiência
-                                </span>
-                            )}
+                        {isLoading ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                        <span className="lg:hidden">Excluir</span>
+                    </Button>
+                </TooltipPerso>
+            </div>
 
-                            {!isMobile && (
-                                <SquarePen className="w-4 h-4" />
-                            )}
-                        </Button>
-                    </TooltipPerso>
-                    <TooltipPerso
-                        id="excluirexperiencia"
-                        message="Clique para excluir"
-                    >
-                        <Button
-                            className={`${isMobile ? "w-full!" : ""}`}
-                            variant={"destructive"}
-                            size="icon"
-                            onClick={() => handleDelete()}
-                            disabled={isLoading}
-                        >
-                            {
-                                isLoading ? (
-                                    <Loader2 className="animate-spin w-4 h-4" />
-                                ) : (
-                                    <>
-                                        {isMobile && (
-                                            <span className="flex gap-2">
-                                                <Trash2 className="w-4 h-4" />
-                                                Deletar experiência
-                                            </span>
-                                        )}
-
-                                        {!isMobile && (
-                                            <Trash2 className="w-4 h-4" />
-                                        )}
-                                    </>
-
-                                )
-                            }
-                        </Button>
-                    </TooltipPerso>
-
-                </div>
-
-                <DialogExperienceUpdate
-                    experience={experience}
-                    open={openUpdate}
-                    onOpenChange={setOpenUpdate}
-                />
-            </CardContent>
-        </Card>
+            <DialogExperienceUpdate
+                experience={experience}
+                open={openUpdate}
+                onOpenChange={setOpenUpdate}
+            />
+        </div>
     )
 }
 
@@ -167,39 +134,4 @@ function formatPeriod(startDate?: Date | null, endDate?: Date | null, currentJob
     if (!endDate) return start;
 
     return `${start} - ${formatMonthYear(endDate)}`;
-}
-
-// Formata data e hora: dd/MM/yyyy HH:mm
-function formatDateTime(date?: Date | null): string {
-    if (!date) return "Não encontramos uma data no momento";
-
-    const d = new Date(date);
-
-    if (isNaN(d.getTime())) return "Data inválida";
-
-    const dia = String(d.getDate()).padStart(2, "0");
-    const mes = String(d.getMonth() + 1).padStart(2, "0");
-    const ano = d.getFullYear();
-    const horas = String(d.getHours()).padStart(2, "0");
-    const minutos = String(d.getMinutes()).padStart(2, "0");
-
-    return `${dia}/${mes}/${ano} ${horas}:${minutos}`;
-}
-
-// Cor do avatar baseada no nome da empresa
-function getCompanyColor(name: string): string {
-    const colors = [
-        "bg-blue-700", "bg-red-600", "bg-green-600", "bg-purple-600",
-        "bg-orange-500", "bg-indigo-600", "bg-pink-600", "bg-cyan-600",
-        "bg-amber-600", "bg-teal-600"
-    ];
-
-    if (!name) return colors[0];
-
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-
-    return colors[Math.abs(hash) % colors.length];
 }

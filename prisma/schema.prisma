@@ -149,9 +149,33 @@ model StudySection {
 
   createdAt  DateTime @default(now())
 
+  // Gamificação: cada seção é um nível que precisa do quiz aprovado para liberar o próximo
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  bestScore   Int       @default(0)
+  attempts    Int       @default(0)
+
   strengths  StudyStrength[]
   gaps       StudyGap[]
   plans      StudyPlan[]
+  questions  StudyQuestion[]
+}
+
+model StudyQuestion {
+  id          String       @id @default(cuid())
+
+  sectionId   String
+  section     StudySection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  position    Int
+  question    String       @db.Text
+  options     String[]
+  answerIndex Int
+  explanation String       @db.Text
+
+  createdAt   DateTime     @default(now())
+
+  @@index([sectionId])
 }
 
 model StudyStrength {

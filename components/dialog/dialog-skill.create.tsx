@@ -61,7 +61,7 @@ type SkillFormData = z.infer<typeof skillSchema>;
 function StepDot({ active, done }: { active: boolean; done: boolean }) {
     return (
         <span
-            className={`inline-block w-2 h-2 rounded-full transition-all ${done ? "bg-green-500" : active ? "bg-zinc-800 scale-125" : "bg-zinc-300"
+            className={`inline-block w-2 h-2 rounded-full transition-all ${done ? "bg-success" : active ? "bg-brand scale-125" : "bg-zinc-300"
                 }`}
         />
     );
@@ -267,8 +267,8 @@ export function DialogSkillCreate() {
                                 />
                                 {errors.nome && (
                                     <span className="flex gap-2 justify-start items-center">
-                                        <TriangleAlert className="text-red-700 bg-red-200 p-1 w-8 h-8 rounded" />
-                                        <p className="text-red-500 text-sm"> {errors.nome.message}</p>
+                                        <TriangleAlert className="text-danger bg-danger-soft p-1 w-8 h-8 rounded" />
+                                        <p className="text-danger text-sm"> {errors.nome.message}</p>
                                     </span>
                                 )}
                             </div>
@@ -284,8 +284,8 @@ export function DialogSkillCreate() {
                                 />
                                 {errors.descricao && (
                                     <span className="flex gap-2 justify-start items-center">
-                                        <TriangleAlert className="text-red-700 bg-red-200 p-1 w-8 h-8 rounded" />
-                                        <p className="text-red-500 text-sm"> {errors.descricao.message}</p>
+                                        <TriangleAlert className="text-danger bg-danger-soft p-1 w-8 h-8 rounded" />
+                                        <p className="text-danger text-sm"> {errors.descricao.message}</p>
                                     </span>
                                 )}
                             </div>
@@ -462,10 +462,10 @@ export function DialogSkillCreate() {
                                             answers[i] === q.answer_correct ? (
                                                 <CheckCircle2
                                                     key={i}
-                                                    className="w-4 h-4 text-green-500"
+                                                    className="w-4 h-4 text-success"
                                                 />
                                             ) : (
-                                                <XCircle key={i} className="w-4 h-4 text-red-400" />
+                                                <XCircle key={i} className="w-4 h-4 text-danger" />
                                             )
                                         )}
                                     </div>

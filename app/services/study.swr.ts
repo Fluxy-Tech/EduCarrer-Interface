@@ -13,7 +13,8 @@ export interface StudyDTO {
     title: string;
     createdAt?: Date | null;
     userId: string;
-    vacancy: Vacancy;
+    vacancy?: Vacancy | null;
+    sections?: StudySectionDTO[];
 }
 
 export interface ResultGetFilterStudy {
@@ -29,6 +30,7 @@ export interface StudyFilterDTO {
     createdAt?: Date | null;
     updatedAt?: Date | null;
     userId: string;
+    vacancy?: Vacancy | null;
 }
 
 export interface StudySectionDTO {
@@ -41,6 +43,10 @@ export interface StudySectionDTO {
     gaps: StudyGapDTO[];
     plans: StudyPlanDTO[];
     createdAt?: Date | null;
+    completed?: boolean;
+    completedAt?: Date | null;
+    bestScore?: number;
+    attempts?: number;
 }
 
 export interface StudyStrengthDTO {
@@ -118,6 +124,55 @@ export async function getStudyById(id: string): Promise<ResultGetFilterStudy> {
 export async function deleteStudy(id: string) {
     const { data } = await axios.delete(`${URL}/api/study/${id}`, {
         withCredentials: true
+    })
+    return data
+}
+
+export interface QuizQuestionDTO {
+    id: string;
+    position: number;
+    question: string;
+    options: string[];
+}
+
+export interface ResultGetQuiz {
+    status: boolean
+    message: string
+    questions: QuizQuestionDTO[]
+}
+
+export interface QuizResultDTO {
+    questionId: string;
+    selectedIndex: number | null;
+    answerIndex: number;
+    correct: boolean;
+    explanation: string;
+}
+
+export interface ResultSubmitQuiz {
+    status: boolean
+    message: string
+    score?: number
+    total?: number
+    passed?: boolean
+    results?: QuizResultDTO[]
+}
+
+// validateStatus mantém a mensagem do back nos erros 400 (nível bloqueado, falha na geração)
+export async function getQuizBySection(studyId: string, sectionId: string): Promise<ResultGetQuiz> {
+    const { data } = await axios.get(`${URL}/api/study/${studyId}/sections/${sectionId}/quiz`, {
+        withCredentials: true,
+        validateStatus: (status) => status < 500
+    })
+    return data
+}
+
+export async function submitQuizBySection(studyId: string, sectionId: string, answers: Record<string, number>): Promise<ResultSubmitQuiz> {
+    const { data } = await axios.post(`${URL}/api/study/${studyId}/sections/${sectionId}/quiz`, {
+        answers
+    }, {
+        withCredentials: true,
+        validateStatus: (status) => status < 500
     })
     return data
 }

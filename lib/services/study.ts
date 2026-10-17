@@ -11,29 +11,9 @@ const studyRepository = new StudyRepository();
 const studyRedis = new StudyRedis();
 const hundleStudyWithOpenAi = new HundleStudyWithOpenAi();
 
-// Coletar todos estudos de um usuario sem as sessões de estudo
+// Coletar todos estudos de um usuario com o progresso dos níveis
 export async function getStudyWithoutSessionByUserId(userId: string) {
-
-    const findStudyRedisInRedis = await studyRedis.getStudyByUserIdFromRedis(userId);
-
-    if (findStudyRedisInRedis) return findStudyRedisInRedis;
-
-    const findStudyRedisInDataBase = await studyRepository.getStudyByUserId(userId);
-
-    if (findStudyRedisInDataBase) {
-        studyRedis.setStudyInRedis(userId, findStudyRedisInDataBase);
-    }
-
-    const studysWithoutSession = findStudyRedisInDataBase.map((s) => {
-        s.id,
-            s.title,
-            s.userId,
-            s.createdAt,
-            s.vacancy,
-            s.updatedAt
-    });
-
-    return studysWithoutSession;
+    return await getAllStudies(userId);
 }
 
 // Criar um estudo para usuario
@@ -166,10 +146,11 @@ export async function createStudy(idVacancy: string, userId: string) {
 export async function getAllStudies(userId: string) {
     const findStudyRedisInRedis = await studyRedis.getStudyByUserIdFromRedis(userId);
 
-    if (findStudyRedisInRedis) return findStudyRedisInRedis;
+    // O redis devolve [] quando não tem cache, então só usamos quando houver estudos
+    if (findStudyRedisInRedis.length > 0) return findStudyRedisInRedis;
 
     const findStudyRedisInDataBase = await studyRepository.getStudyByUserId(userId);
-    if (findStudyRedisInDataBase) {
+    if (findStudyRedisInDataBase.length > 0) {
         studyRedis.setStudyInRedis(userId, findStudyRedisInDataBase);
     }
 
@@ -182,7 +163,12 @@ export async function getStudyById(userId: string, id: string) {
 
     if(findStudyByUserIdAndIdRedisInRedis) return findStudyByUserIdAndIdRedisInRedis;
 
-    return await studyRepository.getStudyById(id);
+    const study = await studyRepository.getStudyById(id);
+
+    // Impede que um usuário acesse o estudo de outro pelo id
+    if (!study || study.userId != userId) return null;
+
+    return study;
 }
 
 // Coletar numero de estudos tem para tela de admin

@@ -1,25 +1,14 @@
 "use client";
 
-import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useVacancysAdmin } from "@/app/services/vacancys.swr";
-import Image from "next/image";
-import { Loader2, Users, Search, BrainCircuit, MapPinHouse, ChartColumnIncreasing, BriefcaseBusiness, Building2, Heart, Flame } from "lucide-react";
+import { Loader2, Search, BrainCircuit, MapPinHouse, Users, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { getAvaliationVancancyByUserId } from "@/app/services/avaliationsVacancy.swr";
-import IconeAlvo from "@/public/icone-alvo.png";
 import CadsVacancyAdmin from "@/components/cards/card-vacancy-admin";
 import CharRecomedacaoDeVagas from "@/components/chart/acuracia-recomendacoes";
 import CharGeracaoDeEstudo from "@/components/chart/acuracia-geracao-de-estudos";
 import { DialogVacncyCreate } from "@/components/dialog/dialog-vacancy.create";
 import { useMetricsAdmin } from "@/app/services/metrics.swr";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 
 import {
   Select,
@@ -28,24 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const bussinesMoreVacancys = [
-  {
-    "id": "1",
-    "name": "Colmeia",
-    "vacancys": 200
-  },
-  {
-    "id": "2",
-    "name": "Telek",
-    "vacancys": 10
-  },
-  {
-    "id": "3",
-    "name": "Fluxe",
-    "vacancys": 1
-  }
-]
 
 export interface Vacancy {
   id: string;
@@ -70,7 +41,6 @@ export default function DashboardPage() {
   const [nomeFiltro, setNomeFiltro] = useState("");
   const [nivelFiltro, setNivelFiltro] = useState("todos");
   const [modalidadeFiltro, setModalidadeFiltro] = useState("todos");
-  const [needAvaliation, setNeedAvaliation] = useState<boolean>(false);
 
   const vagasFiltradas = vacancys?.filter((vaga) => {
     const matchNome =
@@ -89,59 +59,55 @@ export default function DashboardPage() {
     return matchNome && matchNivel && matchModalidade;
   });
 
-  const handleGetNeedAvaliation = async () => {
-    try {
-      const res = await getAvaliationVancancyByUserId();
-      if (res.solicited) {
-        setNeedAvaliation(res.solicited);
-      }
-    } catch (error) {
-      console.error("Erro ao verificar necessidade de avaliação:", error);
-    }
-  };
-
-  const handleClosedDialogAvaliation = () => {
-    setNeedAvaliation(false);
-    handleGetNeedAvaliation();
-  };
-
-  useEffect(() => {
-    handleGetNeedAvaliation();
-  }, []);
+  const stats = [
+    { icon: Users, label: "Usuários cadastrados", value: `+${metrics?.totalUsers ?? 0}` },
+    { icon: Building2, label: "Empresas parceiras", value: `+${metrics?.totalBussines ?? 0}` },
+  ];
 
   return (
-    <div className="flex-col-reverse lg:flex-row flex justify-center itens-center gap-3">
-      <div className="w-full min-h-full flex flex-col gap-4 relative">
-        {/* Card de filtros */}
-        <div className="w-full bg-white rounded-lg border border-zinc-200 shadow-sm p-4 flex flex-col gap-3">
+    <div className="flex flex-col gap-8">
 
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <Users strokeWidth={1} className="h-6 w-6 text-black" />
+      <div className="grid gap-4 sm:grid-cols-2 stagger">
+        {stats.map((s) => (
+          <div key={s.label} className="surface flex items-center gap-4 p-5">
+            <span className="grid place-items-center size-12 shrink-0 rounded-2xl bg-ink text-white">
+              <s.icon className="size-5" />
+            </span>
             <div>
-              <h1 className="text-md font-semibold text-black">Filtros de busca</h1>
-              <p className="text-xs text-zinc-400">Encontre a vaga que deseja editar ou excluir</p>
+              <p className="text-3xl font-extrabold text-ink tabular-nums">{s.value}</p>
+              <p className="text-sm text-muted-foreground">{s.label}</p>
             </div>
           </div>
+        ))}
+      </div>
 
-          {/* Campo de busca */}
-          <div className="flex items-center w-full border border-zinc-200 rounded-md px-3 py-2 bg-white gap-2">
-            <Search className="h-4 w-4 text-zinc-400 shrink-0" />
-            <Input
-              type="text"
-              placeholder="Buscar por nome da vaga, empresa ou palavra-chave..."
-              value={nomeFiltro}
-              onChange={(e) => setNomeFiltro(e.target.value)}
-              className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-black placeholder:text-zinc-400 p-0 h-8 text-sm"
-            />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+        <div className="flex flex-col gap-6 min-w-0">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="font-display text-3xl text-ink">Vagas cadastradas</h2>
+              <p className="text-sm text-muted-foreground">Edite, desative ou cadastre novas vagas na plataforma</p>
+            </div>
+            <DialogVacncyCreate />
           </div>
 
-          {/* Selects de nível e modalidade */}
-          <div className="flex gap-3 flex-col lg:flex-row">
+          {/* Filtros */}
+          <div className="surface p-3 flex flex-col gap-3 lg:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar por vaga, empresa ou tecnologia..."
+                value={nomeFiltro}
+                onChange={(e) => setNomeFiltro(e.target.value)}
+                className="h-11 pl-11"
+              />
+            </div>
+
             <Select value={nivelFiltro} onValueChange={(value) => setNivelFiltro(value)}>
-              <SelectTrigger className="w-full bg-white! border border-zinc-200 rounded-md px-3 text-sm text-black focus:ring-0 focus:ring-offset-0 h-12!">
+              <SelectTrigger className="w-full lg:w-52 h-11! rounded-xl border-input bg-white text-sm text-ink">
                 <div className="flex items-center gap-2">
-                  <BrainCircuit className="h-6! w-6! text-emerald-500 shrink-0" />
+                  <BrainCircuit className="size-4 text-brand shrink-0" />
                   <SelectValue placeholder="Todos os níveis" />
                 </div>
               </SelectTrigger>
@@ -154,9 +120,9 @@ export default function DashboardPage() {
             </Select>
 
             <Select value={modalidadeFiltro} onValueChange={(value) => setModalidadeFiltro(value)}>
-              <SelectTrigger className="w-full bg-white! border border-zinc-200 rounded-md px-3 text-sm text-black focus:ring-0 focus:ring-offset-0 h-12!">
+              <SelectTrigger className="w-full lg:w-56 h-11! rounded-xl border-input bg-white text-sm text-ink">
                 <div className="flex items-center gap-2">
-                  <MapPinHouse className="h-6! w-6! text-violet-500 shrink-0" />
+                  <MapPinHouse className="size-4 text-brand shrink-0" />
                   <SelectValue placeholder="Todas as modalidades" />
                 </div>
               </SelectTrigger>
@@ -168,101 +134,32 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
           </div>
-        </div>
 
-        <div className="w-full bg-white rounded-xl border border-zinc-200 shadow-sm p-4 flex flex-col gap-3">
-          <div className="w-full flex items-center justify-start h-auto gap-3">
-            <Image src={IconeAlvo} alt="Ícone de alvo" className="h-6 w-6" />
-            <div className="flex flex-col items-start">
-              <h1 className="text-md font-semibold text-black">
-                Vagas cadastradas no sistema
-              </h1>
-              <p className="text-xs text-zinc-400">
-                Todo nossos registros de vagas estão disponíveis pra você acessar
-              </p>
-            </div>
-
-          </div>
-
-          <DialogVacncyCreate />
-
-          <div>
-            {/* Lista de vagas */}
-            {vacancys ? (
-              <div className="w-full h-full overflow-y-autorounded-lg flex flex-col gap-4 bg-transparent">
-                {vagasFiltradas && vagasFiltradas.length > 0 ? (
-                  vagasFiltradas.map((vaga) => (
-                    <CadsVacancyAdmin key={vaga.id} vacancy={vaga} />
-                  ))
-                ) : (
-                  <p className="text-center text-gray-500">
-                    Nenhuma vaga cadastrada.
-                  </p>
-                )}
+          {/* Lista de vagas */}
+          {vacancys ? (
+            vagasFiltradas && vagasFiltradas.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {vagasFiltradas.map((vaga) => (
+                  <CadsVacancyAdmin key={vaga.id} vacancy={vaga} />
+                ))}
               </div>
             ) : (
-              <div className="w-full p-4 flex items-center justify-center">
-                <Loader2 className="animate-spin" />
-              </div>
-            )}
-          </div>
+              <p className="surface p-8 text-center text-sm text-muted-foreground">
+                Nenhuma vaga cadastrada.
+              </p>
+            )
+          ) : (
+            <div className="w-full p-8 flex items-center justify-center">
+              <Loader2 className="animate-spin text-brand" />
+            </div>
+          )}
         </div>
 
+        <aside className="flex flex-col gap-6 xl:sticky xl:top-28">
+          <CharGeracaoDeEstudo />
+          <CharRecomedacaoDeVagas />
+        </aside>
       </div>
-
-      <div className="w-full lg:w-1/4 h-fit flex flex-col gap-4">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <ChartColumnIncreasing className="h-6 w-6 text-blue-500" />
-              <h1 className="text-black">Estatísticas rápidas</h1>
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            <div className="lg:flex lg:flex-col gap-3 grid lg:grid-cols-2">
-              <Card className="border-blue-400 bg-blue-50">
-                <CardContent className="flex items-center gap-4">
-                  <BriefcaseBusiness className="h-7 w-7 text-blue-600 shrink-0" />
-
-                  <div>
-                    <h2 className="font-semibold text-blue-500">
-                      + {metrics?.totalUsers ?? 0}
-                    </h2>
-
-                    <p className="text-xs text-blue-600">
-                      Usuários cadastrados
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-green-400 bg-green-50">
-                <CardContent className="flex items-center gap-4">
-                  <Building2 className="h-7 w-7 text-green-600 shrink-0" />
-
-                  <div>
-                    <h2 className="font-semibold text-green-500">
-                      + {metrics?.totalBussines ?? 0}
-                    </h2>
-
-                    <p className="text-xs text-green-600">
-                      Empresas parceiras
-                    </p>
-                  </div>
-                </CardContent>
-
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
-
-        <CharGeracaoDeEstudo />
-
-        <CharRecomedacaoDeVagas />
-      </div>
-
     </div>
-
   );
 }

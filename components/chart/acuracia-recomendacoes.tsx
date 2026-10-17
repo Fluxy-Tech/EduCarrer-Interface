@@ -63,7 +63,7 @@ export default function CharRecomedacaoDeVagas() {
     return (
         <Card className="flex flex-col">
             <CardHeader className="items-center pb-0!">
-                <CardTitle className="text-black text-center">Acuracia das recomendações</CardTitle>
+                <CardTitle className="font-display text-2xl font-normal text-ink text-center">Acurácia das recomendações</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 pb-0!">
                 <ChartContainer

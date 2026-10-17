@@ -1,20 +1,26 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookCheck, SquareUser, BookOpen, Star, Target, Calendar, Zap, NotepadText, Route } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  ArrowLeft,
+  Building2,
+  Check,
+  Lock,
+  Play,
+  RotateCcw,
+  Sparkles,
+  ThumbsDown,
+  ThumbsUp,
+  Trophy,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import {
   getStudyById,
   ResultGetFilterStudy,
   StudyFilterDTO,
-  StudySectionDTO,
-  StudyStrengthDTO,
-  StudyGapDTO,
-  StudyPlanDTO,
 } from "@/app/services/study.swr";
 
 import {
@@ -24,72 +30,21 @@ import {
 } from "@/app/services/avaliations.swr";
 
 import { ToastPersonalizado } from "@/components/toast";
+import { ProgressRing } from "@/components/study/level-progress";
+import { LevelContent } from "@/components/study/level-content";
+import { QuizDialog } from "@/components/study/quiz-dialog";
+import { getLevelIcon } from "@/components/study/level-icons";
+import {
+  LEVEL_META,
+  QUIZ_MIN_CORRECT_TO_PASS,
+  QUIZ_QUESTIONS_PER_LEVEL,
+  getStudyProgress,
+  isLevelUnlocked,
+  sortByLevel,
+} from "@/lib/utils/studyLevels";
+import { cn } from "@/lib/utils";
 
-function OverviewStats({ study }: { study: StudyFilterDTO }) {
-  const totalStrengths = study.sections.reduce(
-    (acc, s) => acc + s.strengths.length,
-    0
-  );
-  const totalGaps = study.sections.reduce((acc, s) => acc + s.gaps.length, 0);
-  const totalWeeks =
-    study.sections.length > 0
-      ? Math.max(
-        ...study.sections.flatMap((s) => s.plans.map((p) => p.week)),
-        0
-      )
-      : 0;
-
-  const stats = [
-    {
-      icon: <BookOpen className="w-8 h-8 lg:w-12 lg:h-12 p-2 rounded-lg text-blue-600 bg-blue-200" />,
-      label: "Seções do roteiro",
-      value: study.sections.length,
-      sub: "áreas de conhecimento",
-    },
-    {
-      icon: <Star className="w-8 h-8 lg:w-12 lg:h-12 p-2 rounded-lg text-yellow-600 bg-yellow-100" />,
-      label: "Pontos fortes",
-      value: totalStrengths,
-      sub: "habilidades consolidadas",
-    },
-    {
-      icon: <Target className="w-8 h-8 lg:w-12 lg:h-12 p-2 rounded-lg text-red-500 bg-red-100" />,
-      label: "Lacunas identificadas",
-      value: totalGaps,
-      sub: "oportunidades de melhoria",
-    },
-    {
-      icon: <Calendar className="w-8 h-8 lg:w-12 lg:h-12 p-2 rounded-lg text-indigo-500 bg-indigo-100" />,
-      label: "Plano de estudo",
-      value: totalWeeks > 0 ? `${totalWeeks} semanas` : "—",
-      sub: "planejamento sugerido",
-    },
-  ];
-
-  return (
-    <div>
-      <h3 className="text-gray-800 font-bold text-xl mb-3">
-        Visão geral do roteiro
-      </h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {stats.map((s) => (
-          <Card key={s.label} className="border border-gray-200 shadow-sm">
-            <CardContent className=" flex lg:flex-row flex-col items-start gap-2 lg:gap-4">
-              <div className="">{s.icon}</div>
-              <div className="flex flex-col gap-2 lg:gap-1">
-                <p className="text-sm font-semibold text-black">{s.label}</p>
-                <p className="text-md lg:text-2xl font-bold text-black leading-tight">
-                  {s.value}
-                </p>
-                <p className="text-xs text-gray-400">{s.sub}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
+type LevelState = "done" | "current" | "locked";
 
 // ── page ─────────────────────────────────────────────────────────────────────
 
@@ -101,6 +56,8 @@ export default function LearningPage(props: { id: string }) {
   const [study, setStudy] = useState<StudyFilterDTO | null>(null);
   const [evaluationPerformed, setEvaluationPerformed] = useState<boolean | null>(null);
   const [idAvaliation, setIdAvaliation] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [quizOpen, setQuizOpen] = useState(false);
 
   const handleGetAvaliation = useCallback(async (studyId: string) => {
     try {
@@ -144,7 +101,7 @@ export default function LearningPage(props: { id: string }) {
     }
   };
 
-  const fetchStudy = async (id: string) => {
+  const fetchStudy = async (id: string, silent = false) => {
     if (!id) {
       ToastPersonalizado({ mensagem: "Estudo não encontrado." });
       router.push("/learning");
@@ -152,7 +109,7 @@ export default function LearningPage(props: { id: string }) {
     }
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res: ResultGetFilterStudy = await getStudyById(id);
 
       if (!res.study) {
@@ -162,7 +119,7 @@ export default function LearningPage(props: { id: string }) {
       }
 
       setStudy(res.study);
-      await handleGetAvaliation(id);
+      if (!silent) await handleGetAvaliation(id);
     } catch (error) {
       console.error(error);
       ToastPersonalizado({ mensagem: "Tivemos um erro inesperado." });
@@ -176,289 +133,318 @@ export default function LearningPage(props: { id: string }) {
     fetchStudy(id);
   }, [id]);
 
+  const levels = useMemo(() => sortByLevel(study?.sections ?? []), [study]);
+  const progress = useMemo(() => getStudyProgress(levels), [levels]);
+  const currentIndex = levels.findIndex((l) => !l.completed);
+
+  // Abre direto no nível em andamento
+  useEffect(() => {
+    if (selectedIndex === null && levels.length > 0) {
+      setSelectedIndex(currentIndex === -1 ? levels.length - 1 : currentIndex);
+    }
+  }, [levels, currentIndex, selectedIndex]);
+
+  const levelState = (index: number): LevelState => {
+    if (levels[index]?.completed) return "done";
+    return isLevelUnlocked(levels, index) ? "current" : "locked";
+  };
+
+  const selectLevel = (index: number) => {
+    if (levelState(index) === "locked") {
+      ToastPersonalizado({ mensagem: "Conclua o desafio do nível anterior para liberar este nível." });
+      return;
+    }
+    setSelectedIndex(index);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   if (loading) {
     return (
-      <div className="w-full min-h-full flex items-center justify-center">
-        <span className="text-gray-500">Carregando estudo...</span>
+      <div className="flex flex-col gap-6">
+        <div className="h-64 rounded-3xl bg-ink/90 animate-pulse" />
+        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+          <div className="h-96 rounded-2xl bg-white border border-border" />
+          <div className="h-96 rounded-2xl bg-white border border-border" />
+        </div>
       </div>
     );
   }
 
   if (!study) return null;
 
+  const selected = selectedIndex !== null ? levels[selectedIndex] : null;
+  const selectedMeta = selected ? LEVEL_META[selected.type] : null;
+  const SelectedIcon = selected ? getLevelIcon(selected.type) : Sparkles;
+  const isLastLevel = selectedIndex === levels.length - 1;
+
   return (
-    <div className="w-full min-h-full flex flex-col gap-6 pb-10">
-      {/* ── Hero card ── */}
-      <Card className="border border-gray-200 shadow-sm overflow-hidden">
-        <CardContent className="py-0 px-6 flex items-center lg:items-start justify-start gap-4">
-          <div className="flex items-center lg:items-start justify-center lg:justify-between flex-col gap-4">
-            <h2 className="text-gray-900 text-xl text-center lg:text-left lg:text-2xl font-bold leading-snug">
-              {study.title}
-            </h2>
+    <div className="w-full flex flex-col gap-8 pb-10">
 
-            {/* Evaluation buttons */}
-            <div className="flex gap-2">
-              <Button
-                onClick={() => handleUpdateOrCreateAvaliation(study.id, true)}
-                variant={evaluationPerformed === true ? "default" : "ghost"}
-                className={
-                  evaluationPerformed === true
-                    ? "bg-green-500! hover:bg-green-600! text-white border-transparent text-md font-bold"
-                    : "text-black hover:bg-zinc-100! hover:text-black! text-md font-bold border border-zinc-200"
-                }
-              >
-                👍 Gostei
-              </Button>
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden rounded-3xl bg-ink-gradient text-white animate-rise">
+        <div className="pointer-events-none absolute inset-0 bg-grid [mask-image:linear-gradient(to_left,black,transparent_85%)]" />
 
-              <Button
-                onClick={() => handleUpdateOrCreateAvaliation(study.id, false)}
-                variant={evaluationPerformed === false ? "close" : "ghost"}
-                className={
-                  evaluationPerformed === false
-                    ? "bg-red-500! hover:bg-red-600! text-white border-transparent text-md font-bold"
-                    : "text-black hover:bg-zinc-100! hover:text-black! text-md font-bold border border-zinc-200"
-                }
-              >
-                👎 Não gostei
-              </Button>
+        <div className="relative p-6 sm:p-8 lg:p-10">
+          <Link href="/learning" className="inline-flex items-center gap-2 text-sm font-semibold text-white/60 hover:text-white transition-colors">
+            <ArrowLeft className="size-4" /> Minhas trilhas
+          </Link>
+
+          <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div className="min-w-0">
+              {study.vacancy && (
+                <p className="eyebrow text-gold flex items-center gap-2">
+                  <Building2 className="size-3.5" />
+                  {study.vacancy.company} · {study.vacancy.title}
+                </p>
+              )}
+              <h2 className="mt-3 font-display text-4xl sm:text-5xl leading-[1.05] max-w-3xl">
+                {study.title}
+              </h2>
+
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-gold px-3 py-1 text-xs font-bold text-ink">{progress.rank}</span>
+                <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
+                  {progress.completed}/{progress.total} níveis
+                </span>
+                <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
+                  {QUIZ_QUESTIONS_PER_LEVEL} perguntas por nível
+                </span>
+              </div>
             </div>
 
-            <p className="text-sm text-gray-500 bg-zinc-50 p-2 rounded-lg border border-zinc-300">
-              Avaliação atual:{" "}
-              <span className={`font-medium ${evaluationPerformed ? "text-green-500" : "text-red-500"}`}>
-                {evaluationPerformed === null
-                  ? "Não avaliado"
-                  : evaluationPerformed
-                    ? "Positiva 😁"
-                    : "Negativa 😓"}
-              </span>
-            </p>
+            <div className="flex items-center gap-5 rounded-2xl border border-white/10 bg-white/[0.05] p-5 backdrop-blur-sm">
+              <ProgressRing percent={progress.percent} size={88} stroke={7} tone="light">
+                <span className="text-lg font-extrabold tabular-nums">{progress.percent}%</span>
+              </ProgressRing>
+              <div className="min-w-[160px]">
+                <p className="eyebrow text-white/45">Experiência</p>
+                <p className="mt-1 text-2xl font-extrabold tabular-nums">
+                  {progress.xp}<span className="text-sm font-semibold text-white/40"> / {progress.maxXp} XP</span>
+                </p>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-gold to-[#F3D98B] transition-[width] duration-1000"
+                    style={{ width: `${progress.maxXp ? (progress.xp / progress.maxXp) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* ── Overview stats ── */}
-      <OverviewStats study={study} />
+        {/* Avaliação do estudo */}
+        <div className="relative flex flex-col gap-3 border-t border-white/10 bg-white/[0.03] px-6 sm:px-8 lg:px-10 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-white/60">
+            Este estudo foi útil?{" "}
+            <span className="font-semibold text-white">
+              {evaluationPerformed === null ? "Você ainda não avaliou." : evaluationPerformed ? "Você avaliou como positivo." : "Você avaliou como negativo."}
+            </span>
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleUpdateOrCreateAvaliation(study.id, true)}
+              className={cn(
+                "cursor-pointer inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
+                evaluationPerformed === true ? "bg-success text-white" : "border border-white/15 text-white/75 hover:bg-white/10"
+              )}
+            >
+              <ThumbsUp className="size-4" /> Gostei
+            </button>
+            <button
+              onClick={() => handleUpdateOrCreateAvaliation(study.id, false)}
+              className={cn(
+                "cursor-pointer inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
+                evaluationPerformed === false ? "bg-danger text-white" : "border border-white/15 text-white/75 hover:bg-white/10"
+              )}
+            >
+              <ThumbsDown className="size-4" /> Não gostei
+            </button>
+          </div>
+        </div>
+      </section>
 
-      {/* ── Sections ── */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-gray-800 font-bold text-xl mb-3">
-          Seções do roteiro de estudos
-        </h3>
+      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
 
-        {study.sections.map((section, idx) => (
-          <Card key={idx} className="overflow-hidden shadow-sm border border-gray-200">
-            <CardContent>
-              {
-                section.type == "resume" && (
-                  <div className="flex flex-col w-full gap-4">
-                    <span className="flex gap-2">
-                      <SquareUser className="text-blue-600 hidden lg:block bg-blue-100 w-12 h-12 p-2 rounded-lg" />
-                      <span>
-                        <h1 className="text-black text-xl font-bold">
-                          Resumo do Perfil e da Vaga
-                        </h1>
-                        <p className="text-zinc-600">
-                          Separamos um resumo que nosso agente enchergou sobre você e a vaga
-                        </p>
+        {/* ── Trilha de níveis ── */}
+        <aside className="surface p-5 lg:sticky lg:top-28">
+          <p className="eyebrow text-muted-foreground px-1">Trilha de níveis</p>
+
+          <ol className="mt-4 flex flex-col">
+            {levels.map((level, i) => {
+              const state = levelState(i);
+              const meta = LEVEL_META[level.type];
+              const Icon = getLevelIcon(level.type);
+              const isSelected = selectedIndex === i;
+
+              return (
+                <li key={level.id} className="relative">
+                  {i < levels.length - 1 && (
+                    <span
+                      className={cn(
+                        "absolute left-[27px] top-[52px] bottom-[-4px] w-[2px]",
+                        level.completed ? "bg-gold" : "bg-border"
+                      )}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => selectLevel(i)}
+                    className={cn(
+                      "relative w-full flex items-center gap-3 rounded-xl p-2 text-left transition-colors",
+                      state === "locked" ? "cursor-not-allowed" : "cursor-pointer hover:bg-sky",
+                      isSelected && "bg-sky"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "relative grid place-items-center size-10 shrink-0 rounded-xl transition-all",
+                        state === "done" && "bg-gold text-white",
+                        state === "current" && "bg-brand text-white animate-pulse-ring",
+                        state === "locked" && "bg-muted text-muted-foreground/60",
+                        isSelected && state !== "locked" && "ring-4 ring-brand/15"
+                      )}
+                    >
+                      {state === "done" ? <Check className="size-4" strokeWidth={3} /> : state === "locked" ? <Lock className="size-4" /> : <Icon className="size-4" />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className={cn("block text-[11px] font-bold uppercase tracking-wider", state === "locked" ? "text-muted-foreground/60" : "text-muted-foreground")}>
+                        Nível {i + 1}
+                      </span>
+                      <span className={cn("block truncate text-sm font-bold", state === "locked" ? "text-muted-foreground/70" : "text-ink")}>
+                        {meta?.title ?? level.section}
                       </span>
                     </span>
+                    {state === "done" && (
+                      <span className="shrink-0 rounded-full bg-gold-soft px-2 py-0.5 text-[11px] font-bold text-gold tabular-nums">
+                        {level.bestScore ?? 0}/{QUIZ_QUESTIONS_PER_LEVEL}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
 
+          {progress.finished && (
+            <div className="mt-5 flex items-center gap-3 rounded-xl bg-gold-soft p-4">
+              <Trophy className="size-5 text-gold shrink-0" />
+              <p className="text-sm font-semibold text-ink">Trilha concluída. Você está pronto para a vaga!</p>
+            </div>
+          )}
+        </aside>
 
-                    <p className="text-black">
-                      {section.content}
+        {/* ── Conteúdo do nível ── */}
+        {selected && selectedIndex !== null && (
+          <section key={selected.id} className="flex flex-col gap-6 animate-rise">
+            <div className="surface p-6 sm:p-8">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-4">
+                  <span className="grid place-items-center size-12 shrink-0 rounded-2xl bg-brand-soft text-brand">
+                    <SelectedIcon className="size-5" />
+                  </span>
+                  <div>
+                    <p className="eyebrow text-brand">Nível {selectedIndex + 1} de {levels.length}</p>
+                    <h3 className="mt-1 font-display text-3xl sm:text-4xl leading-tight text-ink">
+                      {selectedMeta?.title ?? selected.section}
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{selectedMeta?.subtitle ?? selected.section}</p>
+                  </div>
+                </div>
+                {selected.completed && (
+                  <span className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-success-soft px-3 py-1.5 text-xs font-bold text-success">
+                    <Check className="size-3.5" strokeWidth={3} /> Concluído
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-8">
+                <LevelContent section={selected} />
+              </div>
+            </div>
+
+            {/* Desafio do nível */}
+            <div className={cn(
+              "relative overflow-hidden rounded-2xl border p-6 sm:p-8",
+              selected.completed ? "border-gold/30 bg-gold-soft/60" : "border-brand/20 bg-white shadow-soft"
+            )}>
+              <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-start gap-4">
+                  <span className={cn(
+                    "grid place-items-center size-12 shrink-0 rounded-2xl",
+                    selected.completed ? "bg-gold text-white" : "bg-ink text-white"
+                  )}>
+                    {selected.completed ? <Trophy className="size-5" /> : <Sparkles className="size-5" />}
+                  </span>
+                  <div>
+                    <p className={cn("eyebrow", selected.completed ? "text-gold" : "text-brand")}>
+                      Desafio do nível
+                    </p>
+                    <h4 className="mt-1 text-lg font-bold text-ink">
+                      {selected.completed
+                        ? `Melhor resultado: ${selected.bestScore ?? 0} de ${QUIZ_QUESTIONS_PER_LEVEL}`
+                        : isLastLevel
+                          ? "Responda para concluir a trilha"
+                          : `Responda para liberar o nível ${selectedIndex + 2}`}
+                    </h4>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {selected.completed
+                        ? `${selected.attempts ?? 0} tentativa${selected.attempts === 1 ? "" : "s"}. Refaça quando quiser para melhorar seu XP.`
+                        : `${QUIZ_QUESTIONS_PER_LEVEL} perguntas sobre este conteúdo. Acerte ${QUIZ_MIN_CORRECT_TO_PASS} para avançar.`}
                     </p>
                   </div>
-                )
-              }
+                </div>
 
-              {
-                section.type == "strengths" && (
-                  <div className="flex flex-col w-full gap-4">
-                    <span className="flex gap-2">
-                      <Route className="text-yellow-800 bg-yellow-100 hidden lg:block w-12 h-12 p-2 rounded-lg" />
-                      <span>
-                        <h1 className="text-black text-xl font-bold">
-                          Pontos fortes no seu perfil
-                        </h1>
-                        <p className="text-zinc-600">
-                          Alguns pontos que encontramos match com seu perfil e a vaga
-                        </p>
-                      </span>
-                    </span>
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                  {selected.completed && !isLastLevel && (
+                    <Button variant="outline" onClick={() => selectLevel(selectedIndex + 1)}>
+                      Próximo nível
+                    </Button>
+                  )}
+                  <Button
+                    variant={selected.completed ? "gold" : "create"}
+                    size="lg"
+                    onClick={() => setQuizOpen(true)}
+                  >
+                    {selected.completed ? <RotateCcw /> : <Play />}
+                    {selected.completed ? "Refazer desafio" : "Iniciar desafio"}
+                  </Button>
+                </div>
+              </div>
+            </div>
 
-                    <div className="flex flex-col gap-6">
-                      {
-                        section.strengths.map((s) => (
-                          <div key={s.id} className="flex gap-2 justify-start items-center lg:items-start flex-col border border-zinc-200 p-4 rounded-lg shadow-lg">
-                            <h1 className="text-orange-500 text-xl font-bold">{s.skill}</h1>
-                            <span className="flex flex-col lg:flex-row gap-1">
-                              <h1 className="text-black font-bold">
-                                Habilidade:
-                              </h1>
-                              <p className="text-black">{s.importance}</p>
-                            </span>
-                            <span className="flex flex-col lg:flex-row gap-1">
-                              <h1 className="text-black font-bold">
-                                Conselho:
-                              </h1>
-                              <p className="text-black">{s.advice}</p>
-                            </span>
+            {/* Prévia do próximo nível bloqueado */}
+            {!isLastLevel && levelState(selectedIndex + 1) === "locked" && (
+              <div className="flex items-center gap-4 rounded-2xl border border-dashed border-input bg-white/60 p-5">
+                <span className="grid place-items-center size-10 shrink-0 rounded-xl bg-muted text-muted-foreground">
+                  <Lock className="size-4" />
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-ink">
+                    Próximo: Nível {selectedIndex + 2} · {LEVEL_META[levels[selectedIndex + 1].type]?.title ?? levels[selectedIndex + 1].section}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Será liberado assim que você vencer o desafio deste nível.</p>
+                </div>
+              </div>
+            )}
 
-                          </div>
-                        ))
-                      }
-                    </div>
-
-                  </div>
-                )
-              }
-
-              {
-                section.type == "lacunasaDevelop" && (
-                  <div className="flex flex-col w-full gap-4">
-
-                    <span className="flex gap-2">
-                      <Zap className="text-red-500 bg-red-100 hidden lg:block w-12 h-12 p-2 rounded-lg" />
-                      <span>
-                        <h1 className="text-black text-xl font-bold">
-                          Lacunas a desenvolver
-                        </h1>
-                        <p className="text-zinc-600">
-                          Separamos algumas lacunas importantes para seu perfil desenvolver
-                        </p>
-                      </span>
-
-                    </span>
-
-                    <div className="flex flex-col gap-6">
-                      {
-                        section.gaps.map((g) => (
-                          <div key={g.id} className="flex flex-col gap-3 lg:gap-5 justify-start lg:items-start items-center border border-zinc-200 shadow-lg p-4 rounded-lg">
-                            <div className="w-auto">
-                              <h1 className="text-red-500 text-xl font-bold">{g.skill}</h1>
-                            </div>
-
-                            <div className="flex flex-col gap-2">
-                              <span className="flex gap-1">
-                                <h1 className="text-black">
-                                  <b>Explicação:</b> {g.explanation}
-                                </h1>
-                              </span>
-                              <span className="flex gap-1">
-                                <h1 className="text-black">
-                                  <b>Tempo estimado:</b> {g.estimatedTime}
-                                </h1>
-                              </span>
-
-                              <span className="flex gap-1">
-                                <h1 className="text-black">
-                                  <b>Prioridade:</b> {g.priority}
-                                </h1>
-                              </span>
-
-                              <h1 className="text-black font-bold">Tópicos:</h1>
-                              <span className="w-full flex flex-wrap gap-2">
-                                {
-                                  g.topics.map((t, itp) => (
-                                    <Badge className="p-2 text-sm text-purple-800 bg-purple-100 border-purple-400 whitespace-normal wrap-break-word" key={itp}>
-                                      {t}
-                                    </Badge>
-                                  ))
-                                }
-                              </span>
-
-                              <h1 className="text-black font-bold">Recursos:</h1>
-                              <span className="w-full flex flex-wrap gap-2">
-                                {
-                                  g.resources.map((r, idr) => (
-                                    <Badge className="p-2 text-sm text-green-800 bg-green-100 border-green-400 whitespace-normal wrap-break-word" key={idr}>
-                                      {r}
-                                    </Badge>
-                                  ))
-                                }
-                              </span>
-
-
-                            </div>
-                          </div>
-                        ))
-                      }
-                    </div>
-                  </div>
-                )
-              }
-
-              {
-                section.type == "studyPlans" && (
-                  <div className="flex flex-col w-full gap-4">
-
-                    <span className="flex gap-2">
-                      <NotepadText className="text-green-800 bg-green-100 hidden lg:block w-12 h-12 p-2 rounded-lg" />
-                      <span>
-                        <h1 className="text-black text-xl font-bold">
-                          Plano de estudos semanal
-                        </h1>
-                        <p className="text-zinc-600 whitespace-normal wrap-break-word">
-                          Seu plano de desenvolvimento foi estruturado com base nas competências mais relevantes para sua carreira. Organizamos os estudos em etapas semanais para facilitar o aprendizado e torná-lo compatível com sua rotina.
-                        </p>
-                      </span>
-                    </span>
-
-                    <div className="flex flex-col gap-6">
-                      {
-                        section.plans.map((p) => (
-                          <div key={p.id} className="flex flex-col gap-2 justify-start items-center lg:items-start border border-zinc-200 shadow-lg p-4 rounded-lg">
-                            <div className="w-auto">
-                              <h1 className="text-blue-500 text-xl font-bold">Semana {p.week}</h1>
-                            </div>
-
-                            <div className="flex flex-col gap-1">
-                              <span className="flex gap-1 flex-col lg:flex-row">
-                                <h1 className="text-black font-bold">Foco: </h1>
-                                <p className="text-black">{p.focus}</p>
-                              </span>
-                              <span className="flex gap-1 flex-col lg:flex-row">
-                                <h1 className="text-black font-bold">Oque você precisa entender: </h1>
-                                <p className="text-black">{p.goals}</p>
-                              </span>
-
-                            </div>
-                          </div>
-                        ))
-                      }
-                    </div>
-                  </div>
-                )
-              }
-
-              {
-                section.type == "finalTip" && (
-                  <div className="flex flex-col w-full gap-4">
-
-                    <span className="flex gap-2">
-                      <BookCheck className="text-orange-600 bg-orange-100 hidden lg:block w-12 h-12 p-2 rounded-lg" />
-                      <span>
-                        <h1 className="text-black text-xl font-bold">
-                          Dica final para o estudo
-                        </h1>
-                        <p className="text-zinc-600 whitespace-normal wrap-break-word">
-                          Pra fechar com chave de ouro deixamos uma dica para concluir seu estudo
-                        </p>
-                      </span>
-                    </span>
-
-                    <p className="text-black">
-                      {section.content}
-                    </p>
-                  </div>
-                )
-              }
-            </CardContent>
-          </Card>
-
-        ))}
+            <QuizDialog
+              open={quizOpen}
+              onOpenChange={setQuizOpen}
+              studyId={study.id}
+              sectionId={selected.id}
+              levelNumber={selectedIndex + 1}
+              levelTitle={selectedMeta?.title ?? selected.section}
+              isLastLevel={isLastLevel}
+              onFinished={() => fetchStudy(study.id, true)}
+              onGoNext={() => {
+                setQuizOpen(false);
+                setSelectedIndex(selectedIndex + 1);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
+          </section>
+        )}
       </div>
-    </div >
+    </div>
   );
 }

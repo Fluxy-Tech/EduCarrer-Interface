@@ -116,7 +116,7 @@ export function DialogSkillUpdate({
                             {...register("descricao")}
                         />
                         {errors.descricao && (
-                            <p className="text-red-500 text-sm">
+                            <p className="text-danger text-sm">
                                 {errors.descricao.message}
                             </p>
                         )}

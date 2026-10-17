@@ -35,3 +35,13 @@ export interface SkillsAndExperienceComparisonResponse {
     strong: string[];
     matchPercentage: number;
 }
+export interface GeneratedQuizQuestion {
+  question: string;
+  options: string[];
+  answerIndex: number;
+  explanation: string;
+}
+
+export interface GeneratedQuiz {
+  questions: GeneratedQuizQuestion[];
+}

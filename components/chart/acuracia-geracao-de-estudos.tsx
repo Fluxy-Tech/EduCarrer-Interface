@@ -63,7 +63,7 @@ export default function CharGeracaoDeEstudo() {
     return (
         <Card className="flex flex-col">
             <CardHeader className="items-center pb-0!">
-                <CardTitle className="text-black text-center">Acuracia das criações de estudos</CardTitle>
+                <CardTitle className="font-display text-2xl font-normal text-ink text-center">Acurácia das criações de estudos</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 pb-0!">
                 <ChartContainer

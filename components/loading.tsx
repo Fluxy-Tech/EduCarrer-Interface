@@ -9,10 +9,13 @@ export default function Loading({ loading, message }: Props) {
 
   if (loading) {
     return (
-      <div className="flex fixed items-center bg-neutral-300/60 justify-center w-full h-full top-0 left-0 z-999">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 text-black animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-          <p className="mt-4 text-black">{
+      <div className="flex fixed items-center bg-ink/55 backdrop-blur-sm justify-center w-full h-full top-0 left-0 z-999 p-6">
+        <div className="surface px-8 py-7 max-w-sm text-center flex flex-col items-center gap-4 animate-pop">
+          <div className="relative h-12 w-12">
+            <div className="absolute inset-0 rounded-full border-4 border-brand-soft" />
+            <div className="absolute inset-0 rounded-full border-4 border-brand border-r-transparent animate-spin motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+          </div>
+          <p className="text-ink text-sm font-medium leading-relaxed">{
             message ?? "Carregando..."
           }</p>
         </div>

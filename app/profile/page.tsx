@@ -2,6 +2,7 @@
 
 import { useSkills } from "@/app/services/skills.swr";
 import { useExperiences } from "@/app/services/experiences.swr";
+import { useSession } from "@/lib/auth/auth-client";
 
 import { Loader2, WandSparkles, BriefcaseBusiness } from "lucide-react";
 
@@ -10,70 +11,131 @@ import { DialogExperienceCreate } from "@/components/dialog/dialog-experience.cr
 
 import CadsSkill from "@/components/cards/card-skill";
 import CadsExperience from "@/components/cards/card-experience";
+import { ProgressRing } from "@/components/study/level-progress";
 
-export default function DashboardPage() {
-  const { skills } = useSkills();
-  const { experiences } = useExperiences();
-
+function SectionHeader({ icon: Icon, eyebrow, title, description, action }: {
+  icon: React.ElementType
+  eyebrow: string
+  title: string
+  description: string
+  action: React.ReactNode
+}) {
   return (
-    <div className="w-full min-h-full flex flex-col gap-4 relative">
-      <div className="w-full bg-white rounded-lg shadow-lg p-4">
-        <div className="flex items-center justify-start gap-4">
-          <span className="p-4 bg-blue-100 rounded-lg">
-            <WandSparkles className="text-blue-600" />
-          </span>
-          <span className="flex flex-col items-start">
-            <h1 className="text-black text-2xl font-semibold">Habilidades</h1>
-            <p className="text-sm text-zinc-600">Gerencie suas principais habilidades técnicas e comportamentais</p>
-          </span>
-
+    <div className="flex flex-col gap-4 border-b border-border p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-4">
+        <span className="grid place-items-center size-12 shrink-0 rounded-2xl bg-brand-soft text-brand">
+          <Icon className="size-5" />
+        </span>
+        <div>
+          <p className="eyebrow text-brand">{eyebrow}</p>
+          <h2 className="mt-0.5 font-display text-3xl leading-tight text-ink">{title}</h2>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
-        <div className="w-full py-4">
-          <DialogSkillCreate />
-        </div>
-        <div className="w-full gap-2 flex flex-col">
-          {skills ? (
-            skills.map((skill) => (
-              <CadsSkill key={skill.id} skill={skill} />
-            ))
-          ) : (
-            <div className="w-full p-4 flex items-center justify-center">
-              <Loader2 className="animate-spin" />
-            </div>
-          )}
-        </div>
-
       </div>
-
-      <div className="w-full bg-white rounded-lg shadow-lg p-4">
-
-        <div className="flex items-center justify-start gap-4">
-          <span className="p-4 bg-purple-100 rounded-lg">
-            <BriefcaseBusiness className="text-purple-600" />
-          </span>
-          <span className="flex flex-col items-start">
-            <h1 className="text-black text-2xl font-semibold">Experiências profissionais</h1>
-            <p className="text-sm text-zinc-600">Gerencie seu histórico profissional</p>
-          </span>
-        </div>
-        <div className="w-full py-4">
-          <DialogExperienceCreate />
-        </div>
-        <div className="w-full gap-2 flex flex-col">
-          {skills ? (
-            experiences.map((experience) => (
-              <CadsExperience key={experience.id} experience={experience} />
-            ))
-          ) : (
-            <div className="w-full p-4 flex items-center justify-center">
-              <Loader2 className="animate-spin" />
-            </div>
-          )}
-        </div>
-
-      </div>
-
+      <div className="shrink-0">{action}</div>
     </div>
   )
 }
 
+export default function DashboardPage() {
+  const { skills } = useSkills();
+  const { experiences } = useExperiences();
+  const { data: session } = useSession();
+
+  // Força do perfil: quanto mais dados, melhores os estudos e as recomendações
+  const strength = Math.min(100, Math.round(
+    Math.min(skills?.length ?? 0, 6) / 6 * 60 + Math.min(experiences?.length ?? 0, 2) / 2 * 40
+  ));
+
+  const initials = (session?.user?.name || "U")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0]?.toUpperCase())
+    .join("");
+
+  return (
+    <div className="w-full flex flex-col gap-8">
+
+      {/* Resumo do perfil */}
+      <section className="relative overflow-hidden rounded-3xl bg-ink-gradient p-6 sm:p-8 text-white animate-rise">
+        <div className="pointer-events-none absolute inset-0 bg-grid [mask-image:linear-gradient(to_left,black,transparent_80%)]" />
+        <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-5">
+            <span className="grid place-items-center size-20 shrink-0 rounded-3xl bg-gradient-to-br from-brand to-ink-3 text-2xl font-bold ring-4 ring-white/10">
+              {initials}
+            </span>
+            <div className="min-w-0">
+              <p className="eyebrow text-gold">Perfil profissional</p>
+              <h2 className="mt-1 font-display text-4xl leading-tight truncate">{session?.user?.name || "Usuário"}</h2>
+              <p className="text-sm text-white/55 truncate">{session?.user?.email}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-5 rounded-2xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-sm">
+            <ProgressRing percent={strength} size={72} stroke={6} tone="light">
+              <span className="text-base font-extrabold tabular-nums">{strength}%</span>
+            </ProgressRing>
+            <div className="max-w-[220px]">
+              <p className="text-sm font-bold">Força do perfil</p>
+              <p className="text-xs leading-relaxed text-white/55">
+                {skills?.length ?? 0} habilidades e {experiences?.length ?? 0} experiências. Perfis completos geram estudos mais precisos.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="surface overflow-hidden">
+        <SectionHeader
+          icon={WandSparkles}
+          eyebrow="Competências"
+          title="Habilidades"
+          description="Gerencie suas principais habilidades técnicas e comportamentais"
+          action={<DialogSkillCreate />}
+        />
+        <div className="flex flex-col divide-y divide-border">
+          {skills ? (
+            skills.length > 0 ? (
+              skills.map((skill) => (
+                <CadsSkill key={skill.id} skill={skill} />
+              ))
+            ) : (
+              <p className="p-8 text-center text-sm text-muted-foreground">Nenhuma habilidade cadastrada ainda.</p>
+            )
+          ) : (
+            <div className="w-full p-8 flex items-center justify-center">
+              <Loader2 className="animate-spin text-brand" />
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="surface overflow-hidden">
+        <SectionHeader
+          icon={BriefcaseBusiness}
+          eyebrow="Carreira"
+          title="Experiências profissionais"
+          description="Gerencie seu histórico profissional"
+          action={<DialogExperienceCreate />}
+        />
+        <div className="flex flex-col divide-y divide-border">
+          {experiences ? (
+            experiences.length > 0 ? (
+              experiences.map((experience) => (
+                <CadsExperience key={experience.id} experience={experience} />
+              ))
+            ) : (
+              <p className="p-8 text-center text-sm text-muted-foreground">Nenhuma experiência cadastrada ainda.</p>
+            )
+          ) : (
+            <div className="w-full p-8 flex items-center justify-center">
+              <Loader2 className="animate-spin text-brand" />
+            </div>
+          )}
+        </div>
+      </section>
+
+    </div>
+  )
+}

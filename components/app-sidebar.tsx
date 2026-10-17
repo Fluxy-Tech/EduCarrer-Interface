@@ -1,15 +1,13 @@
 "use client"
 
-import logo from "@/public/logoSemFundo.png"
 import * as React from "react"
 import {
-  BookOpenText,
   BriefcaseBusiness,
   BookMarked,
   UserCog,
   LogOut,
-  User,
   ShieldUser,
+  ChevronsUpDown,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -27,7 +25,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { authClient, useSession } from "@/lib/auth/auth-client"
-import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,21 +33,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import Image from "next/image"
+import { BrandMark } from "@/components/brand-mark"
 
 const menuItems = [
   {
     title: "Vagas",
+    description: "Oportunidades para você",
     url: "/jobs",
     icon: BriefcaseBusiness,
   },
   {
-    title: "Estudo",
+    title: "Estudos",
+    description: "Trilhas e níveis",
     url: "/learning",
     icon: BookMarked,
   },
   {
     title: "Perfil",
+    description: "Habilidades e experiências",
     url: "/profile",
     icon: UserCog,
   },
@@ -72,6 +72,7 @@ export function AppSidebar() {
     if (session?.user?.role === "admin") {
       baseItems.push({
         title: "Admin",
+        description: "Gestão da plataforma",
         url: "/admin",
         icon: ShieldUser,
       })
@@ -80,57 +81,92 @@ export function AppSidebar() {
     return baseItems
   }, [session?.user?.role])
 
+  const initials = (session?.user?.name || "U")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0]?.toUpperCase())
+    .join("")
+
   return (
-    <Sidebar className="h-full border-r border-zinc-300">
-      <SidebarHeader className="flex items-start justify-center py-5 px-4">
-        <div className="flex items-center gap-2">
-          <Image src={logo.src} width={200} height={200} alt="Logo" />
-        </div>
+    <Sidebar className="border-r-0">
+      <div className="pointer-events-none absolute inset-0 bg-grid opacity-60 [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
+
+      <SidebarHeader className="relative px-5 pt-7 pb-6">
+        <BrandMark />
       </SidebarHeader>
-      <SidebarContent className="flex-1 px-2">
+
+      <SidebarContent className="relative flex-1 px-3">
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="eyebrow text-white/35 px-3 mb-2">Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.url}
-                    className={pathname === item.url ? "bg-blue-500! text-white! h-12 px-4 py-2" : "hover:bg-orange-200! hover:text-black! h-12 px-4 py-2"}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span className="pl-2">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+            <SidebarMenu className="gap-1.5">
+              {items.map((item) => {
+                const active = pathname === item.url || pathname.startsWith(`${item.url}/`)
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      className={
+                        active
+                          ? "relative h-14 px-3 rounded-xl bg-white/[0.07]! text-white! hover:bg-white/10!"
+                          : "relative h-14 px-3 rounded-xl text-white/60 hover:bg-white/5! hover:text-white!"
+                      }
+                    >
+                      <Link href={item.url}>
+                        {active && (
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-[3px] rounded-r-full bg-gold" />
+                        )}
+                        <span className={`grid place-items-center size-9 rounded-lg transition-colors ${active ? "bg-brand text-white" : "bg-white/5 text-white/70"}`}>
+                          <item.icon className="size-4!" />
+                        </span>
+                        <span className="flex flex-col leading-tight pl-1">
+                          <span className="text-sm font-semibold">{item.title}</span>
+                          <span className="text-[11px] text-white/40">{item.description}</span>
+                        </span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-white p-4">
+
+      <SidebarFooter className="relative p-3">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-2">
+          <p className="eyebrow text-gold mb-1">Dica</p>
+          <p className="text-xs leading-relaxed text-white/60">
+            Complete os níveis dos seus estudos para acumular XP e subir de patente.
+          </p>
+        </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="sidebar" className="w-full justify-start gap-2">
-              <User className="h-4 w-4" />
-              <div className="flex flex-col items-start text-left">
-                <span className="text-sm font-medium">
+            <button className="cursor-pointer w-full flex items-center gap-3 rounded-xl p-2.5 text-left hover:bg-white/5 transition-colors">
+              <span className="grid place-items-center size-10 shrink-0 rounded-xl bg-gradient-to-br from-brand to-ink-3 text-sm font-bold text-white">
+                {initials}
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-sm font-semibold text-white">
                   {session?.user?.name || "Usuário"}
                 </span>
-                <span className="text-xs text-black">
+                <span className="truncate text-xs text-white/45">
                   {session?.user?.email}
                 </span>
-              </div>
-            </Button>
+              </span>
+              <ChevronsUpDown className="ml-auto size-4 shrink-0 text-white/40" />
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+          <DropdownMenuContent align="end" side="top" className="w-60 rounded-xl p-1.5">
+            <DropdownMenuLabel className="text-muted-foreground text-xs font-semibold">Minha conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-white cursor-pointer h-10 bg-blue-500 hover:bg-blue-600 transition flex items-center just" onClick={handleLogout}>
-              <LogOut className="mr-1 text-white h-4 w-4" />
-              <span>Deslogar</span>
+            <DropdownMenuItem className="cursor-pointer h-10 rounded-lg text-danger focus:bg-danger-soft focus:text-danger" onClick={handleLogout}>
+              <LogOut className="mr-1 size-4 text-danger" />
+              <span>Sair da conta</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

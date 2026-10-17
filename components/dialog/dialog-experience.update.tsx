@@ -155,7 +155,7 @@ export function DialogExperienceUpdate({
                             })}
                         />
                         {errors.nome && (
-                            <p className="text-sm text-red-500">{errors.nome.message}</p>
+                            <p className="text-sm text-danger">{errors.nome.message}</p>
                         )}
                     </div>
 
@@ -182,7 +182,7 @@ export function DialogExperienceUpdate({
                             )}
                         />
                         {errors.senioridade && (
-                            <p className="text-sm text-red-500">{errors.senioridade.message}</p>
+                            <p className="text-sm text-danger">{errors.senioridade.message}</p>
                         )}
                     </div>
 
@@ -200,7 +200,7 @@ export function DialogExperienceUpdate({
                             })}
                         />
                         {errors.descricao && (
-                            <p className="text-sm text-red-500">{errors.descricao.message}</p>
+                            <p className="text-sm text-danger">{errors.descricao.message}</p>
                         )}
                     </div>
 

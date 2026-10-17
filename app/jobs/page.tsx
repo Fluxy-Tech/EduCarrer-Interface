@@ -2,27 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useVacancys } from "@/app/services/vacancys.swr";
-import Image from "next/image";
-import { Loader2, Users, Search, BrainCircuit, MapPinHouse, ChartColumnIncreasing, BriefcaseBusiness, Building2, Heart, Flame } from "lucide-react";
+import { Search, BrainCircuit, MapPinHouse, BriefcaseBusiness, Building2, Heart, BookOpenCheck, Target } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DialogAvaliationsVacancys } from "@/components/dialog/dialog-avaliations-vacancys";
 import { getAvaliationVancancyByUserId } from "@/app/services/avaliationsVacancy.swr";
-import Banner from "@/public/banner.png";
-import Rocket from "@/public/dakernet-rocket.gif";
-import IconeAlvo from "@/public/icone-alvo.png";
-import Primeiro from "@/public/primeiro.png";
-import Segundo from "@/public/segundo.png";
-import Terceiro from "@/public/terceiro.png";
 import CadsVacancy from "@/components/cards/card-vacancy";
 import { useMetrics } from "@/app/services/metrics.swr";
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 
 import {
   Select,
@@ -31,24 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const bussinesMoreVacancys = [
-  {
-    "id": "1",
-    "name": "Colmeia",
-    "vacancys": 200
-  },
-  {
-    "id": "2",
-    "name": "Telek",
-    "vacancys": 10
-  },
-  {
-    "id": "3",
-    "name": "Fluxe",
-    "vacancys": 1
-  }
-]
 
 export interface Vacancy {
   id: string;
@@ -113,53 +80,66 @@ export default function DashboardPage() {
     handleGetNeedAvaliation();
   }, []);
 
+  const stats = [
+    { icon: BriefcaseBusiness, label: "Vagas disponíveis", value: `+${metrics?.totalVacancys ?? 0}` },
+    { icon: Building2, label: "Empresas parceiras", value: `+${metrics?.totalBussines ?? 0}` },
+    { icon: BookOpenCheck, label: "Estudos construídos", value: metrics?.totalStudiesCreateds ?? 0 },
+    { icon: Heart, label: "Satisfação", value: `${metrics?.totalSatisfation ?? 0}%` },
+  ];
+
   return (
-    <div className="flex-col-reverse lg:flex-row flex justify-center itens-center gap-3">
-      <div className="w-full min-h-full flex flex-col gap-4 relative">
-        <DialogAvaliationsVacancys
-          active={needAvaliation}
-          closeDialog={handleClosedDialogAvaliation}
-        />
+    <div className="flex flex-col gap-8">
+      <DialogAvaliationsVacancys
+        active={needAvaliation}
+        closeDialog={handleClosedDialogAvaliation}
+      />
 
-        <div className="w-full rounded-lg overflow-hidden shadow-sm">
-          <Image
-            src={Banner}
-            alt="Banner"
-            className="w-full h-auto rounded-lg object-contain"
-            priority
-          />
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-3xl bg-ink-gradient p-6 sm:p-8 lg:p-10 text-white animate-rise">
+        <div className="pointer-events-none absolute inset-0 bg-grid [mask-image:linear-gradient(to_left,black,transparent_80%)]" />
+        <div className="relative grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-end">
+          <div>
+            <p className="eyebrow text-gold">Recomendação inteligente</p>
+            <h2 className="mt-3 font-display text-4xl sm:text-5xl leading-[1.05]">
+              Oportunidades que <em className="text-gold-gradient">combinam</em> com você.
+            </h2>
+            <p className="mt-4 max-w-lg text-white/60 leading-relaxed">
+              Cruzamos suas habilidades e experiências com vagas reais. Gere um estudo para qualquer vaga e transforme-a em uma trilha de níveis.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {stats.map((s) => (
+              <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-sm">
+                <s.icon className="size-4 text-gold" />
+                <p className="mt-3 text-2xl font-extrabold tabular-nums">{s.value}</p>
+                <p className="text-xs text-white/50">{s.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
+      </section>
 
-        {/* Card de filtros */}
-        <div className="w-full bg-white rounded-lg border border-zinc-200 shadow-sm p-4 flex flex-col gap-3">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+        <div className="flex flex-col gap-6 min-w-0">
 
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <Users strokeWidth={1} className="h-6 w-6 text-black" />
-            <div>
-              <h1 className="text-md font-semibold text-black">Filtros de busca</h1>
-              <p className="text-xs text-zinc-400">Encontre a vaga ideal para o seu perfil</p>
+          {/* Filtros */}
+          <div className="surface p-3 flex flex-col gap-3 lg:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar por vaga, empresa ou tecnologia..."
+                value={nomeFiltro}
+                onChange={(e) => setNomeFiltro(e.target.value)}
+                className="h-11 pl-11"
+              />
             </div>
-          </div>
 
-          {/* Campo de busca */}
-          <div className="flex items-center w-full border border-zinc-200 rounded-md px-3 py-2 bg-white gap-2">
-            <Search className="h-4 w-4 text-zinc-400 shrink-0" />
-            <Input
-              type="text"
-              placeholder="Buscar por nome da vaga, empresa ou palavra-chave..."
-              value={nomeFiltro}
-              onChange={(e) => setNomeFiltro(e.target.value)}
-              className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-black placeholder:text-zinc-400 p-0 h-8 text-sm"
-            />
-          </div>
-
-          {/* Selects de nível e modalidade */}
-          <div className="flex gap-3 flex-col lg:flex-row">
             <Select value={nivelFiltro} onValueChange={(value) => setNivelFiltro(value)}>
-              <SelectTrigger className="w-full bg-white! border border-zinc-200 rounded-md px-3 text-sm text-black focus:ring-0 focus:ring-offset-0 h-12!">
+              <SelectTrigger className="w-full lg:w-52 h-11! rounded-xl border-input bg-white text-sm text-ink">
                 <div className="flex items-center gap-2">
-                  <BrainCircuit className="h-6! w-6! text-emerald-500 shrink-0" />
+                  <BrainCircuit className="size-4 text-brand shrink-0" />
                   <SelectValue placeholder="Todos os níveis" />
                 </div>
               </SelectTrigger>
@@ -172,9 +152,9 @@ export default function DashboardPage() {
             </Select>
 
             <Select value={modalidadeFiltro} onValueChange={(value) => setModalidadeFiltro(value)}>
-              <SelectTrigger className="w-full bg-white! border border-zinc-200 rounded-md px-3 text-sm text-black focus:ring-0 focus:ring-offset-0 h-12!">
+              <SelectTrigger className="w-full lg:w-56 h-11! rounded-xl border-input bg-white text-sm text-ink">
                 <div className="flex items-center gap-2">
-                  <MapPinHouse className="h-6! w-6! text-violet-500 shrink-0" />
+                  <MapPinHouse className="size-4 text-brand shrink-0" />
                   <SelectValue placeholder="Todas as modalidades" />
                 </div>
               </SelectTrigger>
@@ -186,177 +166,75 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
           </div>
-        </div>
 
-        <div className="w-full bg-white rounded-xl border border-zinc-200 shadow-sm p-4 flex flex-col gap-3">
-          <div className="w-full flex items-center justify-start h-auto gap-3">
-            <Image src={IconeAlvo} alt="Ícone de alvo" className="h-6 w-6" />
-            <div className="flex flex-col items-start">
-              <h1 className="text-md font-semibold text-black">
-                Vagas recomendadas para você
-              </h1>
-              <p className="text-xs text-zinc-400">
-                Baseadas no seu perfil e prefêrencias
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="font-display text-3xl text-ink">Recomendadas para você</h2>
+              <p className="text-sm text-muted-foreground">Baseadas no seu perfil e preferências</p>
+            </div>
+            {!isLoading && (
+              <span className="shrink-0 rounded-full bg-brand-soft px-3 py-1 text-xs font-bold text-brand tabular-nums">
+                {vagasFiltradas?.length ?? 0} vagas
+              </span>
+            )}
+          </div>
+
+          {/* Lista de vagas */}
+          {isLoading ? (
+            <div className="surface flex items-center gap-4 p-6">
+              <span className="relative grid place-items-center size-12 shrink-0">
+                <span className="absolute inset-0 rounded-full border-4 border-brand-soft" />
+                <span className="absolute inset-0 rounded-full border-4 border-brand border-r-transparent animate-spin" />
+              </span>
+              <p className="text-sm text-muted-foreground">
+                Estamos analisando seu perfil e encontrando as vagas mais compatíveis com você. Aguarde um instante.
               </p>
             </div>
-
-          </div>
-
-          <div>
-            {/* Lista de vagas */}
-            {
-              isLoading ? (
-                <Card className="w-full">
-                  <CardContent className="text-gray-500 flex items-center justify-center gap-4">
-                    <Image
-                      src={Rocket}
-                      alt="Carregando..."
-                      width={50}
-                      height={50}
-                      unoptimized
-                    />
-                    <p>Estamos analisando seu perfil e encontrando as vagas mais compatíveis com você. Aguarde um instante.</p>
-                  </CardContent>
-                </Card>
-              ) :
-                (
-                  <div className="w-full h-full overflow-y-autorounded-lg flex flex-col gap-4 bg-transparent">
-                    {vagasFiltradas && vagasFiltradas.length > 0 ? (
-                      vagasFiltradas.map((vaga) => (
-                        <CadsVacancy key={vaga.id} vacancy={vaga} />
-                      ))
-                    ) : (
-                      <p className="text-center text-gray-500">
-                        Ainda não encontramos vagas compatíveis com o seu perfil. Atualize suas habilidades e experiências para receber recomendações mais alinhadas às suas qualificações.
-                      </p>
-                    )}
-                  </div>
-                )
-            }
-
-          </div>
+          ) : vagasFiltradas && vagasFiltradas.length > 0 ? (
+            <div className="flex flex-col gap-4 stagger">
+              {vagasFiltradas.map((vaga) => (
+                <CadsVacancy key={vaga.id} vacancy={vaga} />
+              ))}
+            </div>
+          ) : (
+            <div className="surface flex flex-col items-center gap-4 px-6 py-14 text-center">
+              <span className="grid place-items-center size-14 rounded-2xl bg-brand-soft text-brand">
+                <Target className="size-6" />
+              </span>
+              <p className="max-w-md text-sm text-muted-foreground">
+                Ainda não encontramos vagas compatíveis com o seu perfil. Atualize suas habilidades e experiências para receber recomendações mais alinhadas às suas qualificações.
+              </p>
+            </div>
+          )}
         </div>
 
+        {/* Lateral */}
+        <aside className="surface p-6 xl:sticky xl:top-28">
+          <p className="eyebrow text-brand">Ranking</p>
+          <h3 className="mt-1 font-display text-2xl text-ink">Empresas com mais vagas</h3>
+
+          <ol className="mt-5 flex flex-col gap-2">
+            {metrics && metrics.bussinesMoreWithVacancys.length > 0 ? (
+              metrics.bussinesMoreWithVacancys.map((v, i) => (
+                <li key={v.company} className="flex items-center gap-3 rounded-xl p-2 hover:bg-sky transition-colors">
+                  <span className={`grid place-items-center size-11 shrink-0 rounded-xl text-lg font-bold ${i == 0 ? "bg-gold text-white" : i == 1 ? "bg-ink text-white" : "bg-brand-soft text-brand"}`}>
+                    {v.company.replace(" ", "").slice(0, 1)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-ink">{v.company}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {v.countVacancies == 1 ? `${v.countVacancies} vaga disponível` : `${v.countVacancies} vagas disponíveis`}
+                    </p>
+                  </div>
+                  <span className="font-display text-2xl text-muted-foreground/40 tabular-nums">{i + 1}</span>
+                </li>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">Sem dados no momento.</p>
+            )}
+          </ol>
+        </aside>
       </div>
-
-      <div className="w-full lg:w-1/4 h-fit lg:flex flex-col gap-4 hidden">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <ChartColumnIncreasing className="h-6 w-6 text-blue-500" />
-              <h1 className="text-black">Estatísticas rápidas</h1>
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            <div className="lg:flex lg:flex-col gap-3 grid grid-cols-1 lg:grid-cols-2">
-              <Card className="border-blue-400 bg-blue-50">
-                <CardContent className="flex items-center gap-4">
-                  <BriefcaseBusiness className="h-7 w-7 text-blue-600 shrink-0" />
-
-                  <div>
-                    <h2 className="font-semibold text-blue-500">
-                      + {metrics?.totalVacancys ?? 0}
-                    </h2>
-
-                    <p className="text-xs text-blue-600">
-                      Vagas disponíveis
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-green-400 bg-green-50">
-                <CardContent className="flex items-center gap-4">
-                  <Building2 className="h-7 w-7 text-green-600 shrink-0" />
-
-                  <div>
-                    <h2 className="font-semibold text-green-500">
-                      + {metrics?.totalBussines ?? 0}
-                    </h2>
-
-                    <p className="text-xs text-green-600">
-                      Empresas parceiras
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-orange-400 bg-orange-50">
-                <CardContent className="flex items-center gap-4">
-                  <Users className="h-7 w-7 text-orange-600 shrink-0" />
-
-                  <div>
-                    <h2 className="font-semibold text-orange-500">
-                      {metrics?.totalStudiesCreateds ?? 0}
-                    </h2>
-
-                    <p className="text-xs text-orange-600">
-                      Estudos construidos
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-purple-400 bg-purple-50">
-                <CardContent className="flex items-center gap-4">
-                  <Heart className="h-7 w-7 text-purple-600 shrink-0" />
-
-                  <div>
-                    <h2 className="font-semibold text-purple-500">
-                      {metrics?.totalSatisfation ?? 0}%
-                    </h2>
-
-                    <p className="text-xs text-purple-600">
-                      Satisfação dos usuários
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Flame className="h-6 w-6 text-red-500" />
-              <h1 className="text-black">Empresas com mais vagas</h1>
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            <div className="lg:flex lg:flex-col gap-3 grid grid-cols-1 lg:grid-cols-2">
-
-              {
-                metrics && metrics.bussinesMoreWithVacancys.length > 0 && metrics.bussinesMoreWithVacancys.map((v, i) => (
-                  <Card key={v.company} className={`${i == 1 ? "bg-zinc-100" : " bg-orange-50"} p-0! py-2! shadow-none border-none`}>
-                    <CardContent className="flex items-center gap-4">
-
-                      <div className={`min-w-12! min-h-12! text-white rounded-full flex items-center justify-center font-bold text-2xl ${i == 0 ? "bg-blue-800" : i == 1 ? "bg-purple-700" : "bg-orange-600"}`}>
-                        {v.company.replace(" ", "").slice(0, 1)}
-                      </div>
-
-                      <div className="w-full whitespace-normal! wrap-break-word!">
-                        <h2 className="text-md font-semibold text-black flex items-center justify-start gap-2 whitespace-normal! wrap-break-word!">
-                          <Building2 size={15} /> {v.company}
-                        </h2>
-
-                        <p className="text-xs text-black whitespace-normal! wrap-break-word!">
-                          {v.countVacancies == 1 ? `${v.countVacancies} vaga disponivel` : `${v.countVacancies} vagas disponivel`}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              }
-
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-    </div >
-
+    </div>
   );
 }
