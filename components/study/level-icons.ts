@@ -1,6 +1,6 @@
 import { CalendarRange, Flag, LucideIcon, Medal, ScanSearch, Target } from "lucide-react"
 
-export const LEVEL_ICONS: Record<string, LucideIcon> = {
+export const SECTION_ICONS: Record<string, LucideIcon> = {
   resume: ScanSearch,
   strengths: Medal,
   lacunasaDevelop: Target,
@@ -8,6 +8,6 @@ export const LEVEL_ICONS: Record<string, LucideIcon> = {
   finalTip: Flag,
 }
 
-export function getLevelIcon(type: string): LucideIcon {
-  return LEVEL_ICONS[type] ?? Flag
+export function getSectionIcon(type: string): LucideIcon {
+  return SECTION_ICONS[type] ?? Flag
 }

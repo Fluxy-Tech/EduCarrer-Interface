@@ -5,84 +5,69 @@ import {
     QUIZ_MIN_CORRECT_TO_PASS,
     QUIZ_QUESTIONS_PER_LEVEL,
     isLevelUnlocked,
-    sortByLevel,
 } from "@/lib/utils/studyLevels";
 
 const studyRepository = new StudyRepository();
 const hundleStudyWithOpenAi = new HundleStudyWithOpenAi();
 
-type StudyWithSections = NonNullable<Awaited<ReturnType<StudyRepository["getStudySectionsProgress"]>>>;
-type SectionWithContent = StudyWithSections["sections"][number];
+type StudyWithLevels = NonNullable<Awaited<ReturnType<StudyRepository["getStudyLevelsProgress"]>>>;
+type GapLevel = StudyWithLevels["sections"][number]["gaps"][number];
 
 interface ResLevelAccess {
     status: boolean
     message: string
-    study?: StudyWithSections
-    section?: SectionWithContent
+    study?: StudyWithLevels
+    gap?: GapLevel
 }
 
-// Transforma o conteúdo da seção em texto para a IA montar as perguntas
-function sectionToText(section: SectionWithContent): string {
-    if (section.type == "strengths") {
-        return section.strengths
-            .map((s) => `Habilidade: ${s.skill}. Importância: ${s.importance}. Conselho: ${s.advice}`)
-            .join("\n");
-    }
-
-    if (section.type == "lacunasaDevelop") {
-        return section.gaps
-            .map((g) => `Lacuna: ${g.skill}. Explicação: ${g.explanation}. Prioridade: ${g.priority}. Tempo estimado: ${g.estimatedTime}. Tópicos: ${g.topics.join(", ")}. Recursos: ${g.resources.join(", ")}`)
-            .join("\n");
-    }
-
-    if (section.type == "studyPlans") {
-        return section.plans
-            .sort((a, b) => a.week - b.week)
-            .map((p) => `Semana ${p.week}. Foco: ${p.focus}. Objetivos: ${p.goals}`)
-            .join("\n");
-    }
-
-    return section.content ?? "";
+// Transforma a lacuna em texto para a IA montar as perguntas sobre o conteúdo a ser estudado
+function gapToText(gap: GapLevel): string {
+    return [
+        `Competência a estudar: ${gap.skill}`,
+        `Por que estudar: ${gap.explanation}`,
+        `Tópicos: ${gap.topics.join(", ")}`,
+        `Recursos indicados: ${gap.resources.join(", ")}`
+    ].join("\n");
 }
 
-// Valida se o estudo é do usuário e se o nível já foi liberado
-async function getLevelAccess(userId: string, studyId: string, sectionId: string): Promise<ResLevelAccess> {
-    const study = await studyRepository.getStudySectionsProgress(studyId);
+// Valida se o estudo é do usuário e se o nível (lacuna) já foi liberado
+async function getLevelAccess(userId: string, studyId: string, gapId: string): Promise<ResLevelAccess> {
+    const study = await studyRepository.getStudyLevelsProgress(studyId);
 
     if (!study || study.userId != userId) {
         return { status: false, message: "Estudo não encontrado" };
     }
 
-    const sections = sortByLevel(study.sections);
-    const index = sections.findIndex((s) => s.id == sectionId);
+    const levels = study.sections.flatMap((s) => s.gaps);
+    const index = levels.findIndex((g) => g.id == gapId);
 
     if (index == -1) {
         return { status: false, message: "Nível não encontrado neste estudo" };
     }
 
-    if (!isLevelUnlocked(sections, index)) {
+    if (!isLevelUnlocked(levels, index)) {
         return { status: false, message: "Conclua o nível anterior para liberar este nível" };
     }
 
-    return { status: true, message: "Nível liberado", study, section: sections[index] };
+    return { status: true, message: "Nível liberado", study, gap: levels[index] };
 }
 
 // Coletar o quiz de um nível, gerando as perguntas na primeira vez
-export async function getQuizBySection(userId: string, studyId: string, sectionId: string) {
-    const access = await getLevelAccess(userId, studyId, sectionId);
+export async function getQuizByGap(userId: string, studyId: string, gapId: string) {
+    const access = await getLevelAccess(userId, studyId, gapId);
 
-    if (!access.status || !access.study || !access.section) {
+    if (!access.status || !access.study || !access.gap) {
         return { status: false, message: access.message, questions: [] };
     }
 
     // slice protege contra duas gerações simultâneas do mesmo quiz
-    let questions = (await studyRepository.getQuestionsBySectionId(sectionId)).slice(0, QUIZ_QUESTIONS_PER_LEVEL);
+    let questions = (await studyRepository.getQuestionsByGapId(gapId)).slice(0, QUIZ_QUESTIONS_PER_LEVEL);
 
     if (questions.length == 0) {
-        const generated = await hundleStudyWithOpenAi.createQuizSection(
+        const generated = await hundleStudyWithOpenAi.createQuizGap(
             access.study.title,
-            access.section.section,
-            sectionToText(access.section)
+            access.gap.skill,
+            gapToText(access.gap)
         );
 
         if (!generated) {
@@ -91,7 +76,7 @@ export async function getQuizBySection(userId: string, studyId: string, sectionI
 
         questions = await studyRepository.createQuestions(
             generated.questions.map((q, i) => ({
-                sectionId,
+                gapId,
                 position: i + 1,
                 question: q.question,
                 options: q.options,
@@ -115,14 +100,14 @@ export async function getQuizBySection(userId: string, studyId: string, sectionI
 }
 
 // Corrigir o quiz de um nível e liberar o próximo quando aprovado
-export async function submitQuizBySection(userId: string, studyId: string, sectionId: string, answers: Record<string, number>) {
-    const access = await getLevelAccess(userId, studyId, sectionId);
+export async function submitQuizByGap(userId: string, studyId: string, gapId: string, answers: Record<string, number>) {
+    const access = await getLevelAccess(userId, studyId, gapId);
 
-    if (!access.status || !access.section) {
+    if (!access.status || !access.gap) {
         return { status: false, message: access.message };
     }
 
-    const questions = (await studyRepository.getQuestionsBySectionId(sectionId)).slice(0, QUIZ_QUESTIONS_PER_LEVEL);
+    const questions = (await studyRepository.getQuestionsByGapId(gapId)).slice(0, QUIZ_QUESTIONS_PER_LEVEL);
 
     if (questions.length < QUIZ_QUESTIONS_PER_LEVEL) {
         return { status: false, message: "Quiz ainda não foi gerado para este nível" };
@@ -138,11 +123,11 @@ export async function submitQuizBySection(userId: string, studyId: string, secti
 
     const score = results.filter((r) => r.correct).length;
     const passed = score >= QUIZ_MIN_CORRECT_TO_PASS;
-    const alreadyCompleted = access.section.completed;
+    const alreadyCompleted = access.gap.completed;
 
-    await studyRepository.updateSectionProgress(sectionId, {
-        attempts: access.section.attempts + 1,
-        bestScore: Math.max(access.section.bestScore, score),
+    await studyRepository.updateGapProgress(gapId, {
+        attempts: access.gap.attempts + 1,
+        bestScore: Math.max(access.gap.bestScore, score),
         ...(passed && !alreadyCompleted ? { completed: true, completedAt: new Date() } : {})
     });
 

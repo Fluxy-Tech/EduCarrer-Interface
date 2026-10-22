@@ -43,10 +43,6 @@ export interface StudySectionDTO {
     gaps: StudyGapDTO[];
     plans: StudyPlanDTO[];
     createdAt?: Date | null;
-    completed?: boolean;
-    completedAt?: Date | null;
-    bestScore?: number;
-    attempts?: number;
 }
 
 export interface StudyStrengthDTO {
@@ -75,6 +71,10 @@ export interface StudyGapDTO {
     estimatedTime: string;
     topics: string[];
     resources: string[];
+    completed?: boolean;
+    completedAt?: Date | null;
+    bestScore?: number;
+    attempts?: number;
 }
 
 export interface CreateStudyDTO {
@@ -159,16 +159,16 @@ export interface ResultSubmitQuiz {
 }
 
 // validateStatus mantém a mensagem do back nos erros 400 (nível bloqueado, falha na geração)
-export async function getQuizBySection(studyId: string, sectionId: string): Promise<ResultGetQuiz> {
-    const { data } = await axios.get(`${URL}/api/study/${studyId}/sections/${sectionId}/quiz`, {
+export async function getQuizByGap(studyId: string, gapId: string): Promise<ResultGetQuiz> {
+    const { data } = await axios.get(`${URL}/api/study/${studyId}/gaps/${gapId}/quiz`, {
         withCredentials: true,
         validateStatus: (status) => status < 500
     })
     return data
 }
 
-export async function submitQuizBySection(studyId: string, sectionId: string, answers: Record<string, number>): Promise<ResultSubmitQuiz> {
-    const { data } = await axios.post(`${URL}/api/study/${studyId}/sections/${sectionId}/quiz`, {
+export async function submitQuizByGap(studyId: string, gapId: string, answers: Record<string, number>): Promise<ResultSubmitQuiz> {
+    const { data } = await axios.post(`${URL}/api/study/${studyId}/gaps/${gapId}/quiz`, {
         answers
     }, {
         withCredentials: true,

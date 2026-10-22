@@ -28,6 +28,6 @@ export interface UpdateExperienceDTO {
   seniority?: string;
   about?: string;
   startDate?: Date;
-  endDate?: Date;
+  endDate?: Date | null;
   currentJob?: boolean;
 }

@@ -28,7 +28,8 @@
     { "name": "Avaliations", "description": "Avaliações de estudos" },
     { "name": "AvaliationsVacancy", "description": "Avaliações de vagas" },
     { "name": "Metrics", "description": "Métricas do usuário e administrativas" },
-    { "name": "Reset", "description": "Reset de senha do usuário (fluxo público, sem sessão)" }
+    { "name": "Reset", "description": "Reset de senha do usuário (fluxo público, sem sessão)" },
+    { "name": "Resume", "description": "Leitura de currículo com IA para preencher o perfil" }
   ],
   "components": {
     "securitySchemes": {
@@ -223,7 +224,11 @@
           "priority": { "type": "string" },
           "estimatedTime": { "type": "string" },
           "topics": { "type": "array", "items": { "type": "string" } },
-          "resources": { "type": "array", "items": { "type": "string" } }
+          "resources": { "type": "array", "items": { "type": "string" } },
+          "completed": { "type": "boolean", "description": "Nível (lacuna) concluído no quiz" },
+          "completedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "bestScore": { "type": "integer", "description": "Melhor quantidade de acertos (0 a 5)" },
+          "attempts": { "type": "integer" }
         }
       },
       "StudyPlan": {
@@ -524,6 +529,453 @@
           },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/api/study/{id}/gaps/{gapId}/quiz": {
+      "get": {
+        "tags": [
+          "Study"
+        ],
+        "summary": "Consulta o quiz de 5 perguntas de uma lacuna (gera na primeira vez, sem o gabarito)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPathParam"
+          },
+          {
+            "name": "gapId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Id da lacuna (nível)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quiz carregado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "questions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "position": {
+                            "type": "integer"
+                          },
+                          "question": {
+                            "type": "string"
+                          },
+                          "options": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Study"
+        ],
+        "summary": "Corrige o quiz da lacuna e libera o próximo nível com 4 acertos ou mais",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPathParam"
+          },
+          {
+            "name": "gapId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Id da lacuna (nível)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "answers": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "integer"
+                    },
+                    "description": "Mapa id da pergunta -> índice da alternativa"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quiz corrigido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "score": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "passed": {
+                      "type": "boolean"
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "questionId": {
+                            "type": "string"
+                          },
+                          "selectedIndex": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "answerIndex": {
+                            "type": "integer"
+                          },
+                          "correct": {
+                            "type": "boolean"
+                          },
+                          "explanation": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/resume": {
+      "post": {
+        "tags": [
+          "Resume"
+        ],
+        "summary": "Lê o PDF do currículo e devolve experiências e habilidades para revisão (não salva nada)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Currículo em PDF, até 5 MB"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Currículo lido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "analysis": {
+                      "type": "object",
+                      "properties": {
+                        "skills": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "level": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10
+                              },
+                              "about": {
+                                "type": "string"
+                              },
+                              "action": {
+                                "type": "string",
+                                "enum": [
+                                  "create",
+                                  "update"
+                                ]
+                              },
+                              "existingId": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        },
+                        "experiences": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "seniority": {
+                                "type": "string",
+                                "enum": [
+                                  "Junior",
+                                  "Pleno",
+                                  "Sênior"
+                                ]
+                              },
+                              "about": {
+                                "type": "string"
+                              },
+                              "startDate": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "endDate": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "currentJob": {
+                                "type": "boolean"
+                              },
+                              "action": {
+                                "type": "string",
+                                "enum": [
+                                  "create",
+                                  "update"
+                                ]
+                              },
+                              "existingId": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/resume/confirm": {
+      "post": {
+        "tags": [
+          "Resume"
+        ],
+        "summary": "Aplica no perfil o currículo confirmado: cria novas habilidades e experiências e atualiza as existentes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "skills": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "level": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10
+                        },
+                        "about": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "experiences": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "seniority": {
+                          "type": "string",
+                          "enum": [
+                            "Junior",
+                            "Pleno",
+                            "Sênior"
+                          ]
+                        },
+                        "about": {
+                          "type": "string"
+                        },
+                        "startDate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endDate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "currentJob": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Perfil atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "created": {
+                      "type": "integer"
+                    },
+                    "updated": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
         }
       }
     },

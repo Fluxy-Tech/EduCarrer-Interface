@@ -22,11 +22,7 @@ export class StudySection {
     public strengths: StudyStrength[],
     public gaps: StudyGap[],
     public plans: StudyPlan[],
-    public createdAt: Date | null,
-    public completed: boolean = false,
-    public completedAt: Date | null = null,
-    public bestScore: number = 0,
-    public attempts: number = 0
+    public createdAt: Date | null
   ) {}
 }
 
@@ -49,7 +45,11 @@ export class StudyGap {
     public priority: string,
     public estimatedTime: string,
     public topics: string[],
-    public resources: string[]
+    public resources: string[],
+    public completed: boolean = false,
+    public completedAt: Date | null = null,
+    public bestScore: number = 0,
+    public attempts: number = 0
   ) {}
 }
 

@@ -4,9 +4,10 @@ import { useSkills } from "@/app/services/skills.swr";
 import { useExperiences } from "@/app/services/experiences.swr";
 import { useSession } from "@/lib/auth/auth-client";
 
-import { Loader2, WandSparkles, BriefcaseBusiness } from "lucide-react";
+import { Loader2, WandSparkles, BriefcaseBusiness, FileText } from "lucide-react";
 
 import { DialogSkillCreate } from "@/components/dialog/dialog-skill.create";
+import { DialogResumeImport } from "@/components/dialog/dialog-resume-import";
 import { DialogExperienceCreate } from "@/components/dialog/dialog-experience.create";
 
 import CadsSkill from "@/components/cards/card-skill";
@@ -83,6 +84,20 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Importação do currículo com IA */}
+        <div className="relative mt-6 flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <FileText className="mt-0.5 size-5 shrink-0 text-gold" />
+            <div>
+              <p className="text-sm font-bold">Preencha o perfil com o seu currículo</p>
+              <p className="text-xs leading-relaxed text-white/55">
+                A IA lê o PDF, encontra suas experiências e habilidades e você confirma antes de salvar.
+              </p>
+            </div>
+          </div>
+          <DialogResumeImport />
         </div>
       </section>
 

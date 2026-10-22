@@ -51,6 +51,23 @@ interface LevelDotsProps {
 export function LevelDots({ levels, tone = "dark" }: LevelDotsProps) {
   const currentIndex = levels.findIndex((l) => !l.completed)
 
+  // Trilhas longas não cabem em bolinhas, então viram uma barra segmentada
+  if (levels.length > 6) {
+    return (
+      <div className="flex w-full gap-1">
+        {levels.map((level, i) => (
+          <span
+            key={i}
+            className={cn(
+              "h-2 flex-1 rounded-full",
+              level.completed ? "bg-gold" : i === currentIndex ? "bg-brand" : tone === "light" ? "bg-white/15" : "bg-muted"
+            )}
+          />
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="flex items-center">
       {levels.map((level, i) => {

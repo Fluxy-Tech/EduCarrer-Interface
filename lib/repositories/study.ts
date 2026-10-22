@@ -20,7 +20,7 @@ import {
     StudyStrengthDTO,
     StudyQuestionDTO,
     CreateStudyQuestionDTO,
-    UpdateStudySectionProgressDTO
+    UpdateStudyGapProgressDTO
 } from "@/lib/interfaces/study.interface";
 
 export class StudyRepository {
@@ -74,7 +74,11 @@ export class StudyRepository {
                                         gap.priority,
                                         gap.estimatedTime,
                                         gap.topics,
-                                        gap.resources
+                                        gap.resources,
+                                        gap.completed ?? false,
+                                        gap.completedAt ?? null,
+                                        gap.bestScore ?? 0,
+                                        gap.attempts ?? 0
                                     )
                             ),
 
@@ -89,11 +93,7 @@ export class StudyRepository {
                                     )
                             ),
 
-                            section.createdAt,
-                            section.completed ?? false,
-                            section.completedAt ?? null,
-                            section.bestScore ?? 0,
-                            section.attempts ?? 0
+                            section.createdAt
                         )
                 ),
 
@@ -130,7 +130,7 @@ export class StudyRepository {
                 sections: {
                     include: {
                         strengths: true,
-                        gaps: true,
+                        gaps: { orderBy: { id: "asc" } },
                         plans: true,
                     }
                 },
@@ -151,7 +151,7 @@ export class StudyRepository {
                 sections: {
                     include: {
                         strengths: true,
-                        gaps: true,
+                        gaps: { orderBy: { id: "asc" } },
                         plans: true,
                     }
                 },
@@ -172,7 +172,7 @@ export class StudyRepository {
                 sections: {
                     include: {
                         strengths: true,
-                        gaps: true,
+                        gaps: { orderBy: { id: "asc" } },
                         plans: true,
                     }
                 }
@@ -192,7 +192,7 @@ export class StudyRepository {
             include: {
                 sections: {
                     include: {
-                        gaps: true,
+                        gaps: { orderBy: { id: "asc" } },
                         plans: true,
                         strengths: true
                     }
@@ -311,8 +311,8 @@ export class StudyRepository {
         return await prisma.study.count();
     }
 
-    // Coletar as seções (níveis) de um estudo com o dono, usado para validar acesso e desbloqueio
-    async getStudySectionsProgress(studyId: string) {
+    // Coletar as lacunas (níveis) de um estudo com o dono, usado para validar acesso e desbloqueio
+    async getStudyLevelsProgress(studyId: string) {
         return await prisma.study.findUnique({
             where: {
                 id: studyId
@@ -322,21 +322,26 @@ export class StudyRepository {
                 title: true,
                 userId: true,
                 sections: {
-                    include: {
-                        strengths: true,
-                        gaps: true,
-                        plans: true,
+                    where: {
+                        type: "lacunasaDevelop"
+                    },
+                    select: {
+                        gaps: {
+                            orderBy: {
+                                id: "asc"
+                            }
+                        }
                     }
                 }
             }
         });
     }
 
-    // Coletar as perguntas do quiz de uma seção
-    async getQuestionsBySectionId(sectionId: string): Promise<StudyQuestionDTO[]> {
+    // Coletar as perguntas do quiz de uma lacuna
+    async getQuestionsByGapId(gapId: string): Promise<StudyQuestionDTO[]> {
         return await prisma.studyQuestion.findMany({
             where: {
-                sectionId
+                gapId
             },
             orderBy: {
                 position: "asc"
@@ -344,20 +349,20 @@ export class StudyRepository {
         });
     }
 
-    // Criar as perguntas do quiz de uma seção
+    // Criar as perguntas do quiz de uma lacuna
     async createQuestions(questions: CreateStudyQuestionDTO[]): Promise<StudyQuestionDTO[]> {
         await prisma.studyQuestion.createMany({
             data: questions
         });
 
-        return await this.getQuestionsBySectionId(questions[0].sectionId);
+        return await this.getQuestionsByGapId(questions[0].gapId);
     }
 
-    // Atualizar o progresso (nível) de uma seção
-    async updateSectionProgress(sectionId: string, data: UpdateStudySectionProgressDTO) {
-        return await prisma.studySection.update({
+    // Atualizar o progresso (nível) de uma lacuna
+    async updateGapProgress(gapId: string, data: UpdateStudyGapProgressDTO) {
+        return await prisma.studyGap.update({
             where: {
-                id: sectionId
+                id: gapId
             },
             data
         });

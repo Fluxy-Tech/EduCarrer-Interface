@@ -142,7 +142,25 @@ export class HundleStudyWithOpenAi {
         }
     }
 
+    // O modelo às vezes corta a resposta no limite de tokens e devolve um JSON quebrado, então tentamos de novo
     async createRoadMapCandidate(vacancy: VacancyDTO, profile: any): Promise<string | null> {
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            const raw = await this.requestRoadMapCandidate(vacancy, profile);
+
+            if (!raw) continue;
+
+            try {
+                JSON.parse(raw);
+                return raw;
+            } catch {
+                console.error(`Roadmap do estudo veio com JSON inválido (tentativa ${attempt})`);
+            }
+        }
+
+        return null;
+    }
+
+    private async requestRoadMapCandidate(vacancy: VacancyDTO, profile: any): Promise<string | null> {
         try {
 
             const data = {
@@ -346,28 +364,29 @@ export class HundleStudyWithOpenAi {
         }
     }
 
-    // Gera as 5 perguntas de múltipla escolha que liberam o próximo nível do estudo
-    async createQuizSection(studyTitle: string, sectionTitle: string, sectionContent: string): Promise<GeneratedQuiz | null> {
+    // Gera as 5 perguntas de múltipla escolha sobre a lacuna que o usuário precisa estudar
+    async createQuizGap(studyTitle: string, gapSkill: string, gapContent: string): Promise<GeneratedQuiz | null> {
         try {
             const response = await openai.responses.create({
                 model: process.env.OPENAI_QUIZ_MODEL ?? "gpt-4.1-mini",
                 instructions: [
-                    "Você é um avaliador técnico que cria quizzes de fixação para uma plataforma de estudos de carreira.",
-                    `Crie exatamente ${QUIZ_QUESTIONS_PER_LEVEL} perguntas de múltipla escolha em português do Brasil sobre o conteúdo informado.`,
-                    "Cada pergunta deve ter exatamente 4 alternativas, apenas uma correta, e cobrir um ponto diferente do conteúdo.",
-                    "As perguntas devem verificar compreensão e aplicação prática, não apenas memorização de frases.",
+                    "Você é um avaliador técnico que cria quizzes para uma plataforma de estudos de carreira.",
+                    `Crie exatamente ${QUIZ_QUESTIONS_PER_LEVEL} perguntas de múltipla escolha em português do Brasil que avaliem se o candidato aprendeu a competência informada.`,
+                    "As perguntas devem cobrar o conhecimento técnico dos tópicos (conceitos, uso prático e boas práticas), como em uma entrevista técnica, e não o texto da descrição.",
+                    "Cada pergunta deve ter exatamente 4 alternativas, apenas uma correta, e cobrir um tópico diferente sempre que possível.",
+                    "Use um nível de dificuldade compatível com a vaga do estudo.",
                     "Varie a posição da alternativa correta entre as perguntas.",
                     "A explicação deve dizer em 1 ou 2 frases por que a alternativa correta está certa."
                 ].join(" "),
                 input: JSON.stringify({
                     estudo: studyTitle,
-                    secao: sectionTitle,
-                    conteudo: sectionContent
+                    competencia: gapSkill,
+                    conteudo: gapContent
                 }),
                 text: {
                     format: {
                         type: "json_schema",
-                        name: "quiz_secao_estudo",
+                        name: "quiz_lacuna_estudo",
                         strict: true,
                         schema: {
                             type: "object",
@@ -426,7 +445,7 @@ export class HundleStudyWithOpenAi {
             return { questions: valid.slice(0, QUIZ_QUESTIONS_PER_LEVEL) };
 
         } catch (error: any) {
-            console.error("Erro ao gerar quiz da seção:", error);
+            console.error("Erro ao gerar quiz da lacuna:", error);
             return null;
         }
     }

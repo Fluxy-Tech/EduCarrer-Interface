@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
-import { getQuizBySection, submitQuizBySection } from "@/lib/services/studyQuiz";
+import { getQuizByGap, submitQuizByGap } from "@/lib/services/studyQuiz";
 
-type Params = { params: Promise<{ id: string; sectionId: string }> };
+type Params = { params: Promise<{ id: string; gapId: string }> };
 
 export async function GET(req: Request, { params }: Params) {
   try {
-    const { id, sectionId } = await params;
+    const { id, gapId } = await params;
 
     const session = await auth.api.getSession({
       headers: req.headers,
@@ -19,7 +19,7 @@ export async function GET(req: Request, { params }: Params) {
       );
     }
 
-    const res = await getQuizBySection(session.user.id, id, sectionId);
+    const res = await getQuizByGap(session.user.id, id, gapId);
 
     return NextResponse.json(res, { status: res.status ? 200 : 400 });
   } catch (e: any) {
@@ -34,7 +34,7 @@ export async function GET(req: Request, { params }: Params) {
 
 export async function POST(req: Request, { params }: Params) {
   try {
-    const { id, sectionId } = await params;
+    const { id, gapId } = await params;
     const { answers } = await req.json();
 
     const session = await auth.api.getSession({
@@ -48,7 +48,7 @@ export async function POST(req: Request, { params }: Params) {
       );
     }
 
-    const res = await submitQuizBySection(session.user.id, id, sectionId, answers ?? {});
+    const res = await submitQuizByGap(session.user.id, id, gapId, answers ?? {});
 
     return NextResponse.json(res, { status: res.status ? 200 : 400 });
   } catch (e: any) {

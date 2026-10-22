@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button"
 import {
   QuizQuestionDTO,
   ResultSubmitQuiz,
-  getQuizBySection,
-  submitQuizBySection,
+  getQuizByGap,
+  submitQuizByGap,
 } from "@/app/services/study.swr"
 import { QUIZ_MIN_CORRECT_TO_PASS, XP_PER_CORRECT_ANSWER } from "@/lib/utils/studyLevels"
 import { cn } from "@/lib/utils"
@@ -22,7 +22,7 @@ interface QuizDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   studyId: string
-  sectionId: string
+  gapId: string
   levelNumber: number
   levelTitle: string
   isLastLevel: boolean
@@ -38,7 +38,7 @@ export function QuizDialog({
   open,
   onOpenChange,
   studyId,
-  sectionId,
+  gapId,
   levelNumber,
   levelTitle,
   isLastLevel,
@@ -60,7 +60,7 @@ export function QuizDialog({
     setResult(null)
 
     try {
-      const res = await getQuizBySection(studyId, sectionId)
+      const res = await getQuizByGap(studyId, gapId)
 
       if (!res.status || res.questions.length == 0) {
         setErrorMessage(res.message || "Não conseguimos carregar o desafio.")
@@ -79,13 +79,13 @@ export function QuizDialog({
   useEffect(() => {
     if (open) loadQuiz()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, sectionId])
+  }, [open, gapId])
 
   const handleSubmit = async () => {
     setPhase("submitting")
 
     try {
-      const res = await submitQuizBySection(studyId, sectionId, answers)
+      const res = await submitQuizByGap(studyId, gapId, answers)
 
       if (!res.status) {
         setErrorMessage(res.message || "Não conseguimos corrigir suas respostas.")

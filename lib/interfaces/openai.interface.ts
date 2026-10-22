@@ -45,3 +45,25 @@ export interface GeneratedQuizQuestion {
 export interface GeneratedQuiz {
   questions: GeneratedQuizQuestion[];
 }
+
+// Leitura de currículo
+export interface GeneratedResumeSkill {
+  name: string;
+  level: number;
+  about: string;
+}
+
+export interface GeneratedResumeExperience {
+  name: string;
+  seniority: string;
+  about: string;
+  startDate: string | null;
+  endDate: string | null;
+  currentJob: boolean;
+}
+
+export interface GeneratedResume {
+  isResume: boolean;
+  skills: GeneratedResumeSkill[];
+  experiences: GeneratedResumeExperience[];
+}

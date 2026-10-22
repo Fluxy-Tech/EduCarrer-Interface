@@ -21,10 +21,6 @@ export interface StudySectionDTO {
   gaps: StudyGapDTO[];
   plans: StudyPlanDTO[];
   createdAt?: Date | null;
-  completed: boolean;
-  completedAt?: Date | null;
-  bestScore: number;
-  attempts: number;
 }
 
 export interface StudyStrengthDTO {
@@ -53,6 +49,10 @@ export interface StudyGapDTO {
   estimatedTime: string;
   topics: string[];
   resources: string[];
+  completed: boolean;
+  completedAt?: Date | null;
+  bestScore: number;
+  attempts: number;
 }
 
 // POST
@@ -101,7 +101,7 @@ export interface CreateStudyPlanDTO {
 // QUIZ (gamificação dos níveis)
 export interface StudyQuestionDTO {
   id: string;
-  sectionId: string;
+  gapId: string;
   position: number;
   question: string;
   options: string[];
@@ -110,7 +110,7 @@ export interface StudyQuestionDTO {
 }
 
 export interface CreateStudyQuestionDTO {
-  sectionId: string;
+  gapId: string;
   position: number;
   question: string;
   options: string[];
@@ -118,7 +118,7 @@ export interface CreateStudyQuestionDTO {
   explanation: string;
 }
 
-export interface UpdateStudySectionProgressDTO {
+export interface UpdateStudyGapProgressDTO {
   completed?: boolean;
   completedAt?: Date | null;
   bestScore?: number;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, Building2, CalendarDays, Sparkles, Trophy } from "lucide-react";
 import { StudyDTO } from "@/app/services/study.swr"
 import { LevelDots, ProgressRing } from "@/components/study/level-progress";
-import { getStudyProgress, sortByLevel } from "@/lib/utils/studyLevels";
+import { getStudyLevels, getStudyProgress } from "@/lib/utils/studyLevels";
 import { cn } from "@/lib/utils";
 
 interface CardStudyProps {
@@ -10,7 +10,7 @@ interface CardStudyProps {
 }
 
 export default function CadsStudy({ study }: CardStudyProps) {
-    const levels = sortByLevel(study.sections ?? []);
+    const levels = getStudyLevels(study.sections ?? []);
     const progress = getStudyProgress(levels);
 
     const formattedDate = study.createdAt
@@ -83,6 +83,11 @@ export default function CadsStudy({ study }: CardStudyProps) {
                         </span>
                     </div>
                     <LevelDots levels={levels} />
+                    {!progress.finished && levels[progress.completed] && (
+                        <p className="mt-2.5 truncate text-xs text-muted-foreground">
+                            Estudando agora: <span className="font-semibold text-ink">{levels[progress.completed].skill}</span>
+                        </p>
+                    )}
                 </div>
 
                 <div className="mt-6 flex items-center justify-between border-t border-border pt-4">

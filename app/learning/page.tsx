@@ -14,7 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { getRank, getStudyProgress } from "@/lib/utils/studyLevels";
+import { getRank, getStudyLevels, getStudyProgress } from "@/lib/utils/studyLevels";
 
 import {
   InputGroup,
@@ -65,14 +65,14 @@ export default function DashboardPage() {
 
   // Consolidado de todas as trilhas do usuário
   const summary = useMemo(() => {
-    const all = studies.map((s) => getStudyProgress(s.sections ?? []))
+    const all = studies.map((s) => getStudyProgress(getStudyLevels(s.sections ?? [])))
     const levels = all.reduce((acc, p) => acc + p.completed, 0)
 
     return {
       xp: all.reduce((acc, p) => acc + p.xp, 0),
       levels,
       finished: all.filter((p) => p.finished).length,
-      rank: getRank(Math.floor(levels / Math.max(studies.length, 1))),
+      rank: getRank(all.length ? all.reduce((acc, p) => acc + p.percent, 0) / all.length : 0),
     }
   }, [studies])
 
@@ -97,7 +97,7 @@ export default function DashboardPage() {
               Patente atual: <em className="text-gold-gradient">{summary.rank}</em>
             </h2>
             <p className="mt-4 max-w-lg text-white/60 leading-relaxed">
-              Cada estudo é uma trilha com níveis. Leia o conteúdo, responda 5 perguntas e libere o próximo nível até dominar a vaga.
+              Cada estudo é uma trilha com níveis. Cada lacuna é um nível: estude o conteúdo, responda 5 perguntas e libere a próxima até dominar a vaga.
             </p>
           </div>
 
