@@ -13,6 +13,7 @@ import { DialogExperienceCreate } from "@/components/dialog/dialog-experience.cr
 import CadsSkill from "@/components/cards/card-skill";
 import CadsExperience from "@/components/cards/card-experience";
 import { ProgressRing } from "@/components/study/level-progress";
+import { AgentChat } from "@/components/agent/agent-chat";
 
 function SectionHeader({ icon: Icon, eyebrow, title, description, action }: {
   icon: React.ElementType
@@ -150,6 +151,17 @@ export default function DashboardPage() {
           )}
         </div>
       </section>
+
+      <AgentChat
+        eyebrow="Assistente"
+        title="Tire suas dúvidas sobre a plataforma"
+        description="Pergunte como funcionam o perfil, as vagas e as trilhas de estudo"
+        suggestions={[
+          "Como funciona a trilha de estudos?",
+          "Como gerar um estudo para uma vaga?",
+          "Como melhorar a força do meu perfil?",
+        ]}
+      />
 
     </div>
   )

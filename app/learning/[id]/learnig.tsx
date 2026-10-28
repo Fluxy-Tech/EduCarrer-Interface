@@ -42,6 +42,7 @@ import {
   priorityTone,
 } from "@/components/study/level-content";
 import { QuizDialog } from "@/components/study/quiz-dialog";
+import { AgentChat } from "@/components/agent/agent-chat";
 import { getSectionIcon } from "@/components/study/level-icons";
 import {
   QUIZ_MIN_CORRECT_TO_PASS,
@@ -54,13 +55,14 @@ import {
 import { cn } from "@/lib/utils";
 
 type LevelState = "done" | "current" | "locked";
-type Tab = "overview" | "trail" | "plan" | "tip";
+type Tab = "overview" | "trail" | "plan" | "tip" | "agent";
 
 const TABS: { id: Tab; type: string; label: string }[] = [
   { id: "overview", type: "resume", label: "Visão geral" },
   { id: "trail", type: "lacunasaDevelop", label: "Trilha de estudo" },
   { id: "plan", type: "studyPlans", label: "Plano semanal" },
   { id: "tip", type: "finalTip", label: "Reta final" },
+  { id: "agent", type: "agent", label: "Tutor IA" },
 ];
 
 function SectionHeading({ type, children }: { type: string; children?: React.ReactNode }) {
@@ -221,7 +223,7 @@ export default function LearningPage(props: { id: string }) {
 
   const selected = selectedIndex !== null ? levels[selectedIndex] : null;
   const isLastLevel = selectedIndex === levels.length - 1;
-  const visibleTabs = TABS.filter((t) => t.id === "overview" ? (sectionByType.resume || sectionByType.strengths) : sectionByType[t.type]);
+  const visibleTabs = TABS.filter((t) => t.id === "agent" || (t.id === "overview" ? (sectionByType.resume || sectionByType.strengths) : sectionByType[t.type]));
 
   return (
     <div className="w-full flex flex-col gap-8 pb-10">
@@ -587,6 +589,23 @@ export default function LearningPage(props: { id: string }) {
             <FinalTipContent content={sectionByType.finalTip.content} />
           </div>
         </section>
+      )}
+
+      {/* ── Tutor IA: agente que responde sobre este estudo ── */}
+      {tab === "agent" && (
+        <div key="agent" className="animate-rise">
+          <AgentChat
+            studyId={study.id}
+            eyebrow="Tutor IA"
+            title="Pergunte sobre este estudo"
+            description="O tutor conhece suas lacunas, o plano semanal e a vaga deste estudo"
+            suggestions={[
+              selected ? `Me explique os tópicos de ${selected.skill}` : "Por onde devo começar?",
+              "Como organizar minha semana de estudos?",
+              "Que perguntas podem cair na entrevista dessa vaga?",
+            ]}
+          />
+        </div>
       )}
     </div>
   );

@@ -28,6 +28,7 @@ model User {
   avaliations   Avaliations[]
   resetPassWord ResetPassWord[]
   avaliationsVacancys AvaliationsVacancys[]
+  history History[]
 }
 
 model ResetPassWord {
@@ -134,6 +135,7 @@ model Study {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   sections   StudySection[]
+  history    History[]
 }
 
 model StudySection {
@@ -262,4 +264,34 @@ model AvaliationsVacancys {
   userId     String
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)  
+}
+
+// Conversa com o agente. Sem studyId é o agente da plataforma (perfil), com studyId é o agente daquele estudo
+model History {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  finishAt         DateTime?
+  stopConversation Boolean  @default(false)
+
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  studyId          String?
+  study            Study?   @relation(fields: [studyId], references: [id], onDelete: Cascade)
+
+  messages         Messages[]
+
+  @@index([userId, studyId])
+}
+
+model Messages {
+  id         String   @id @default(cuid())
+  isBot      Boolean
+  text       String   @db.Text
+  createdAt  DateTime @default(now())
+
+  historyId  String
+  history    History  @relation(fields: [historyId], references: [id], onDelete: Cascade)
+
+  @@index([historyId])
 }
