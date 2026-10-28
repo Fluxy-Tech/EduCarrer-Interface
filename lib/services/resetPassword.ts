@@ -17,7 +17,7 @@ interface ResSendEmailResetPassword {
 
 export class ResetPassword {
 
-    private baseUrlSystem = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5401";
+    private baseUrlSystem = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8051";
 
     async resetPasswordByUserEmail(email: string): Promise<ResSendEmailResetPassword> {
 

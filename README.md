@@ -19,7 +19,7 @@ As seguintes variáveis já foram configuradas no v0:
 
 - `DATABASE_URL` - Connection string do PostgreSQL
 - `BETTER_AUTH_SECRET` - Chave secreta para Better Auth (mínimo 32 caracteres)
-- `BETTER_AUTH_URL` - URL da aplicação (http://localhost:3000 para desenvolvimento)
+- `BETTER_AUTH_URL` - URL da aplicação (http://localhost:8051 para desenvolvimento)
 
 ### 2. Instalar Dependências
 
@@ -53,7 +53,7 @@ pnpm db:generate
 pnpm dev
 ```
 
-Acesse http://localhost:3000
+Acesse http://localhost:8051
 
 ## Estrutura do Projeto
 
@@ -115,7 +115,7 @@ Acesse http://localhost:3000
 
 docker build -t educarrer .
 
-docker run -d -p 5401:5401 --name educarrer-container educarrer
+docker run -d -p 8051:8051 --name educarrer-container educarrer
 
 docker compose up -d ( "Para rodar compose pela primeira vez" )
 

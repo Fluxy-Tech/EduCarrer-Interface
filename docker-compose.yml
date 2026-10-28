@@ -8,7 +8,7 @@ services:
         BETTER_AUTH_SECRET: *better_auth_secret
         OPENAI_API_KEY: ${OPENAI_API_KEY}
     ports:
-      - "5401:5401"
+      - "8051:8051"
     depends_on:
       redis:
         condition: service_started
@@ -22,17 +22,17 @@ services:
       DATABASE_URL: "postgresql://educarrer:2505@postgres:5432/edu_carrer_web"
 
       NEXT_BETTER_AUTH_SECRET: *better_auth_secret
-      NEXT_BETTER_AUTH_URL: "http://localhost:5401"
+      NEXT_BETTER_AUTH_URL: "http://localhost:8051"
 
       BETTER_AUTH_SECRET: *better_auth_secret
-      BETTER_AUTH_URL: "http://localhost:5401"
+      BETTER_AUTH_URL: "http://localhost:8051"
 
-      NEXT_PUBLIC_API_URL: "http://localhost:5401"
+      NEXT_PUBLIC_API_URL: "http://localhost:8051"
       NEXT_PUBLIC_AMBIENTE: "dev"
 
       OPENAI_API_KEY: ${OPENAI_API_KEY}
 
-      PORT: "5401"
+      PORT: "8051"
 
   redis:
     image: redis

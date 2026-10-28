@@ -30,7 +30,7 @@ export interface ResultSendAgentMessage {
     messages: AgentMessage[]
 }
 
-const URL = process.env.NEXT_PUBLIC_AMBIENTE == "dev" ? "http://localhost:5401" : "https://educarrerai.egnehl.easypanel.host"
+const URL = process.env.NEXT_PUBLIC_AMBIENTE == "dev" ? "http://localhost:8051" : "https://educarrer.fluxytechnologies.com.br"
 
 // Sem studyId conversa com o agente da plataforma, com studyId conversa com o tutor do estudo
 export async function getAgentHistory(studyId?: string): Promise<ResultGetAgentHistory> {

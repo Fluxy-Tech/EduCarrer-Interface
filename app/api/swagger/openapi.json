@@ -10,11 +10,11 @@
   },
   "servers": [
     {
-      "url": "http://localhost:5401",
+      "url": "http://localhost:8051",
       "description": "Ambiente de desenvolvimento (localhost)"
     },
     {
-      "url": "https://educarrerai.egnehl.easypanel.host",
+      "url": "https://educarrer.fluxytechnologies.com.br",
       "description": "Ambiente de produção (prod)"
     }
   ],

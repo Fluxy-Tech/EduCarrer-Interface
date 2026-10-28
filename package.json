@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 5401",
+    "dev": "next dev -p 8051",
     "build": "next build",
     "test": "jest",
-    "start": "next start -p 5401",
+    "start": "next start -p 8051",
     "lint": "eslint .",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

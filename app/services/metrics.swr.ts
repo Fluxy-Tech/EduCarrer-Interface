@@ -40,7 +40,7 @@ export interface MetricsAdmin {
 }
 
 
-const URL = process.env.NEXT_PUBLIC_AMBIENTE == "dev" ? "http://localhost:5401" : "https://educarrerai.egnehl.easypanel.host"
+const URL = process.env.NEXT_PUBLIC_AMBIENTE == "dev" ? "http://localhost:8051" : "https://educarrer.fluxytechnologies.com.br"
 
 const fetcher = async (url: string): Promise<ResultGetMetrics> => {
     const { data } = await axios.get(url, {

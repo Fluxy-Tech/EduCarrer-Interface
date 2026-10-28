@@ -5,7 +5,7 @@ import { prisma } from "../prisma";
 import nodemailer from "nodemailer";
 import { ResetPassword } from "@/lib/services/resetPassword";
 
-const PORT = process.env.PORT ?? "5401"
+const PORT = process.env.PORT ?? "8051"
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {

@@ -39,7 +39,7 @@ export interface ResultConfirmResume {
     updated?: number
 }
 
-const URL = process.env.NEXT_PUBLIC_AMBIENTE == "dev" ? "http://localhost:5401" : "https://educarrerai.egnehl.easypanel.host"
+const URL = process.env.NEXT_PUBLIC_AMBIENTE == "dev" ? "http://localhost:8051" : "https://educarrer.fluxytechnologies.com.br"
 
 // validateStatus mantém a mensagem do back nos erros 400 (arquivo inválido, não é currículo)
 export async function analyzeResume(file: File): Promise<ResultAnalyzeResume> {

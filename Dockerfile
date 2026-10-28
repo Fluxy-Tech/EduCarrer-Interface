@@ -28,7 +28,7 @@ ENV OPENAI_API_KEY=$OPENAI_API_KEY
 RUN npm run build
 
 # Expõe a porta da aplicação
-EXPOSE 5401
+EXPOSE 8051
 
 # Comando de inicialização
 CMD ["npm", "start"]
