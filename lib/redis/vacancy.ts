@@ -95,11 +95,14 @@ export class getVacancysFromRedis {
             const getVacancysClass = new VacancyRepository();
             const vacancys = await getVacancysClass.getVacancys();
 
-            await redis.set(
-                cacheKey,
-                JSON.stringify(vacancys),
-                "EX", 3600
-            ); // Cache por 1 hora
+            // Não guarda lista vazia, senão vagas inseridas depois só aparecem quando o cache expirar
+            if (vacancys.length > 0) {
+                await redis.set(
+                    cacheKey,
+                    JSON.stringify(vacancys),
+                    "EX", 3600
+                ); // Cache por 1 hora
+            }
 
             console.log("Vacancies fetched from database and cached.");
 

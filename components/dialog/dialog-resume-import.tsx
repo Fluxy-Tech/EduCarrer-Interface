@@ -179,7 +179,6 @@ export function DialogResumeImport() {
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
         {/* Cabeçalho */}
         <div className="relative shrink-0 overflow-hidden bg-ink-gradient py-6 pl-6 pr-14 text-white">
-          <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
           <div className="relative flex items-start gap-4">
             <span className="grid place-items-center size-11 shrink-0 rounded-xl bg-gold text-ink">
               <ScanText className="size-5" />

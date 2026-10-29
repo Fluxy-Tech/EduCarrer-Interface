@@ -96,7 +96,6 @@ export default function DashboardPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl bg-ink-gradient p-6 sm:p-8 lg:p-10 text-white animate-rise">
-        <div className="pointer-events-none absolute inset-0 bg-grid [mask-image:linear-gradient(to_left,black,transparent_80%)]" />
         <div className="relative grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-end">
           <div>
             <p className="eyebrow text-gold">Recomendação inteligente</p>
@@ -145,7 +144,7 @@ export default function DashboardPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem className="h-10!" value="todos">Todos os níveis</SelectItem>
-                <SelectItem className="h-10!" value="Júnior">Júnior</SelectItem>
+                <SelectItem className="h-10!" value="Junior">Júnior</SelectItem>
                 <SelectItem className="h-10!" value="Pleno">Pleno</SelectItem>
                 <SelectItem className="h-10!" value="Sênior">Sênior</SelectItem>
               </SelectContent>

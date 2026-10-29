@@ -230,7 +230,6 @@ export default function LearningPage(props: { id: string }) {
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden rounded-3xl bg-ink-gradient text-white animate-rise">
-        <div className="pointer-events-none absolute inset-0 bg-grid [mask-image:linear-gradient(to_left,black,transparent_85%)]" />
 
         <div className="relative p-6 sm:p-8 lg:p-10">
           <Link href="/learning" className="inline-flex items-center gap-2 text-sm font-semibold text-white/60 hover:text-white transition-colors">

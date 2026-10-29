@@ -113,7 +113,7 @@ export default function DashboardPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem className="h-10!" value="todos">Todos os níveis</SelectItem>
-                <SelectItem className="h-10!" value="Júnior">Júnior</SelectItem>
+                <SelectItem className="h-10!" value="Junior">Júnior</SelectItem>
                 <SelectItem className="h-10!" value="Pleno">Pleno</SelectItem>
                 <SelectItem className="h-10!" value="Sênior">Sênior</SelectItem>
               </SelectContent>

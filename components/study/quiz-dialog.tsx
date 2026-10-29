@@ -111,7 +111,6 @@ export function QuizDialog({
       <DialogContent className="sm:max-w-2xl p-0 overflow-hidden gap-0 max-h-[92vh] flex flex-col">
         {/* Cabeçalho */}
         <div className="relative overflow-hidden bg-ink-gradient px-6 sm:px-8 pt-6 pb-5 text-white">
-          <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
           <div className="relative">
             <p className="eyebrow text-gold">Desafio · Nível {levelNumber}</p>
             <DialogTitle className="mt-1 font-display text-3xl font-normal leading-tight text-white">

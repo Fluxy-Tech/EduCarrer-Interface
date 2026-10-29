@@ -36,7 +36,6 @@ export function AuthShell({ eyebrow, title, description, children }: AuthShellPr
   return (
     <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] bg-white">
       <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-ink-gradient p-12 xl:p-16 text-white">
-        <div className="pointer-events-none absolute inset-0 bg-grid [mask-image:radial-gradient(ellipse_at_top_right,black,transparent_75%)]" />
 
         <BrandMark className="relative" />
 
@@ -91,7 +90,6 @@ export function AuthShell({ eyebrow, title, description, children }: AuthShellPr
       </aside>
 
       <main className="relative flex flex-col items-center justify-center px-5 py-10 sm:px-10">
-        <div className="pointer-events-none absolute inset-0 bg-grid-light [mask-image:radial-gradient(ellipse_at_top,black,transparent_65%)] lg:hidden" />
 
         <div className="relative w-full max-w-[420px] animate-rise">
           <BrandMark tone="dark" className="mb-10 lg:hidden" />

@@ -61,7 +61,6 @@ export default function DashboardPage() {
 
       {/* Resumo do perfil */}
       <section className="relative overflow-hidden rounded-3xl bg-ink-gradient p-6 sm:p-8 text-white animate-rise">
-        <div className="pointer-events-none absolute inset-0 bg-grid [mask-image:linear-gradient(to_left,black,transparent_80%)]" />
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-5">
             <span className="grid place-items-center size-20 shrink-0 rounded-3xl bg-gradient-to-br from-brand to-ink-3 text-2xl font-bold ring-4 ring-white/10">

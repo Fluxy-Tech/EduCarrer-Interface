@@ -34,7 +34,6 @@ export default function CadsStudy({ study }: CardStudyProps) {
         >
             {/* Faixa superior com a vaga */}
             <div className="relative overflow-hidden bg-ink-gradient px-6 pt-5 pb-14 text-white">
-                <div className="pointer-events-none absolute inset-0 bg-grid opacity-70" />
                 <div className="relative flex items-start justify-between gap-4">
                     <div className="min-w-0">
                         <p className="eyebrow text-white/45 flex items-center gap-1.5">

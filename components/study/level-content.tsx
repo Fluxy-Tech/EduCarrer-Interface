@@ -131,7 +131,6 @@ export function WeeklyPlanContent({ plans }: { plans: StudyPlanDTO[] }) {
 export function FinalTipContent({ content }: { content?: string | null }) {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-ink-gradient p-6 sm:p-8 text-white">
-      <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
       <div className="relative flex gap-4">
         <span className="grid place-items-center size-11 shrink-0 rounded-xl bg-gold text-ink">
           <Lightbulb className="size-5" />

@@ -90,7 +90,6 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="border-r-0">
-      <div className="pointer-events-none absolute inset-0 bg-grid opacity-60 [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
 
       <SidebarHeader className="relative px-5 pt-7 pb-6">
         <BrandMark className="h-[72px]" />

@@ -88,7 +88,6 @@ export default function DashboardPage() {
 
       {/* Painel de desempenho */}
       <section className="relative overflow-hidden rounded-3xl bg-ink-gradient p-6 sm:p-8 lg:p-10 text-white animate-rise">
-        <div className="pointer-events-none absolute inset-0 bg-grid [mask-image:linear-gradient(to_left,black,transparent_80%)]" />
 
         <div className="relative grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-end">
           <div>

@@ -212,21 +212,6 @@
     box-shadow: var(--shadow-soft);
   }
 
-  /* Malha sutil usada no fundo das áreas escuras */
-  .bg-grid {
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-    background-size: 32px 32px;
-  }
-
-  .bg-grid-light {
-    background-image:
-      linear-gradient(rgba(10, 26, 53, 0.045) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(10, 26, 53, 0.045) 1px, transparent 1px);
-    background-size: 28px 28px;
-  }
-
   .bg-ink-gradient {
     background:
       radial-gradient(120% 90% at 100% 0%, rgba(31, 86, 240, 0.45) 0%, transparent 55%),
