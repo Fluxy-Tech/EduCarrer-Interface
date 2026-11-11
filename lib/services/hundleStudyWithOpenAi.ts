@@ -11,6 +11,74 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
+const STUDY_MODEL = process.env.OPENAI_STUDY_MODEL ?? "gpt-4.1-mini";
+const VACANCY_FILTER_MODEL = process.env.OPENAI_VACANCY_FILTER_MODEL ?? "gpt-4.1-mini";
+
+// Prompt que compara o perfil do usuário com a stack da vaga
+const SKILLS_COMPARISON_PROMPT = [
+    "Você é um recrutador técnico especialista em vagas de tecnologia.",
+    "Você recebe em JSON as habilidades do candidato (skills, com nível de 0 a 10), suas experiências profissionais (experiences) e uma vaga (vacancy).",
+    "Compare o perfil do candidato com as tecnologias e requisitos da vaga e responda:",
+    "- strong: tecnologias e competências exigidas pela vaga nas quais o candidato já tem boa proficiência, considerando o nível da habilidade e o uso comprovado nas experiências.",
+    "- missing: tecnologias e competências exigidas pela vaga que o candidato não tem ou tem em nível baixo (abaixo de 5).",
+    "- matchPercentage: percentual de 0 a 100 de aderência do candidato aos requisitos da vaga, dando mais peso aos requisitos principais da vaga.",
+    "Use apenas tecnologias relacionadas à vaga, com o nome curto e usual de cada uma (ex: React, Node.js, Docker). Não repita a mesma tecnologia nas duas listas.",
+    "Se o candidato não tiver habilidades nem experiências, retorne strong vazio, todos os requisitos da vaga em missing e matchPercentage 0."
+].join("\n");
+
+// Prompt que escreve o resumo profissional do candidato usado como contexto do estudo
+const CANDIDATE_RESUME_PROMPT = [
+    "Você é um especialista em carreira na área de tecnologia.",
+    "Você recebe em JSON as habilidades do candidato (skills, com nível de 0 a 10) e suas experiências profissionais (experiences).",
+    "Escreva em português do Brasil um resumo profissional do candidato em um único parágrafo de até 6 frases, em terceira pessoa.",
+    "Destaque a senioridade aparente, o tempo e o tipo de experiência, as principais tecnologias dominadas e as áreas de atuação.",
+    "Use apenas as informações recebidas, sem inventar empresas, cargos, tecnologias ou formações.",
+    "Se não houver habilidades nem experiências, diga que o candidato ainda não possui histórico cadastrado na plataforma.",
+    "Responda apenas com o texto do resumo, sem títulos, markdown ou aspas."
+].join("\n");
+
+// Prompt que monta o estudo completo do candidato para a vaga
+const STUDY_ROADMAP_PROMPT = [
+    "Você é um mentor de carreira e especialista técnico da EduCarrer AI, uma plataforma que prepara pessoas para conquistar vagas de tecnologia.",
+    "Você recebe em JSON a vaga (vacancy) e o perfil do candidato (profile), com:",
+    "- strong: tecnologias da vaga que o candidato já domina;",
+    "- missing: tecnologias da vaga que faltam ao candidato;",
+    "- matchPercentage: aderência do candidato à vaga (0 a 100);",
+    "- resume: resumo profissional do candidato.",
+    "",
+    "Crie um estudo personalizado em português do Brasil para preparar o candidato para essa vaga.",
+    "study_name: título curto do estudo citando o cargo da vaga (ex: \"Preparação para Desenvolvedor Front-end Pleno\").",
+    "",
+    "O array studies deve ter exatamente 5 seções, nesta ordem, uma de cada type:",
+    "1. type \"resume\" (section \"Diagnóstico\"): content é um texto de 1 a 2 parágrafos com o diagnóstico do perfil frente à vaga, citando a aderência, o que já está bom e o que precisa evoluir.",
+    "2. type \"strengths\" (section \"Pontos fortes\"): content é uma lista com os pontos fortes do candidato para a vaga, cada item com skill (nome da competência), importance (por que é importante para a vaga) e advice (como valorizar isso na entrevista). Entre 2 e 5 itens.",
+    "3. type \"lacunasaDevelop\" (section \"Lacunas a desenvolver\"): content é uma lista com as lacunas que o candidato precisa estudar, da mais para a menos importante. Cada item tem:",
+    "   - skill: nome da competência;",
+    "   - explanation: explicação didática de 2 a 4 parágrafos do que é a competência, por que a vaga exige e como ela é usada na prática;",
+    "   - priority: exatamente \"Alta\", \"Média\" ou \"Baixa\";",
+    "   - topics: de 4 a 6 tópicos técnicos específicos que o candidato deve estudar;",
+    "   - resources: de 2 a 4 recursos de estudo reais e conhecidos (documentação oficial, cursos ou livros), sem inventar links;",
+    "   - estimated_time: tempo estimado de estudo (ex: \"2 semanas\").",
+    "   Use as tecnologias de missing como base e inclua entre 3 e 6 lacunas. Se missing estiver vazio, use os requisitos da vaga em que o candidato pode se aprofundar.",
+    "4. type \"studyPlans\" (section \"Plano de estudos\"): content é o plano semana a semana, cada item com week (número começando em 1), focus (foco da semana) e goals (metas concretas da semana). O plano deve cobrir as lacunas na ordem de prioridade, com entre 4 e 8 semanas.",
+    "5. type \"finalTip\" (section \"Dica final\"): content é um texto curto com uma dica prática para a reta final da preparação e para a entrevista dessa vaga.",
+    "",
+    "Seja objetivo: os textos devem ser úteis e específicos para a vaga, sem frases genéricas."
+].join("\n");
+
+// Prompt que seleciona as vagas aderentes ao perfil do usuário
+const VACANCY_FILTER_PROMPT = [
+    "Você é um recrutador técnico que recomenda vagas de tecnologia para candidatos.",
+    "Você recebe em JSON as habilidades do candidato (Habilidades, com nível de 0 a 10), suas experiências profissionais (Experiencias_profissionais) e uma lista de vagas (Vagas).",
+    "Selecione as vagas em que o candidato tem boa chance de ser aprovado, considerando:",
+    "- se o candidato domina as principais tecnologias exigidas pela vaga;",
+    "- se a senioridade da vaga é compatível com o tempo e o tipo de experiência do candidato;",
+    "- se a área de atuação da vaga tem relação com as experiências do candidato.",
+    "Retorne em ids apenas os ids das vagas selecionadas, ordenados da mais para a menos aderente.",
+    "Use somente ids que existem na lista de vagas recebida, copiados exatamente como estão, sem repetir.",
+    "Se nenhuma vaga for aderente, ou se o candidato não tiver habilidades nem experiências, retorne ids vazio."
+].join("\n");
+
 export class HundleStudyWithOpenAi {
     async getImportantSkills(skills: SkillDTO[], experiences: ExperienceDTO[], vacancy: VacancyDTO): Promise<SkillsAndExperienceComparisonResponse | null> {
         try {
@@ -22,21 +90,9 @@ export class HundleStudyWithOpenAi {
             }
 
             const response = await openai.responses.create({
-                prompt: {
-                    "id": "pmpt_69fa7f7173088190a697894bf8c62fc70af22ad626ad94d2",
-                    "version": "2"
-                },
-                input: [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "input_text",
-                                "text": JSON.stringify(data)
-                            }
-                        ]
-                    }
-                ],
+                model: STUDY_MODEL,
+                instructions: SKILLS_COMPARISON_PROMPT,
+                input: JSON.stringify(data),
                 text: {
                     "format": {
                         "type": "json_schema",
@@ -77,13 +133,11 @@ export class HundleStudyWithOpenAi {
                         }
                     }
                 },
-                reasoning: {},
                 max_output_tokens: 2048,
-                store: true,
-                include: ["web_search_call.action.sources"]
+                store: false
             });
 
-            const raw = ((response.output as any)?.[0]?.content?.[0]?.text) ?? null;
+            const raw = response.output_text;
 
             if (!raw) return null;
 
@@ -91,6 +145,7 @@ export class HundleStudyWithOpenAi {
             return parsed;
 
         } catch (error: any) {
+            console.error("Erro ao comparar habilidades com a vaga:", error);
             return null
         }
     }
@@ -104,33 +159,19 @@ export class HundleStudyWithOpenAi {
             }
 
             const response = await openai.responses.create({
-                prompt: {
-                    "id": "pmpt_6a0a63b732e4819398cd1c5d96c6e9940abad56442d1f780",
-                    "version": "1"
-                },
-                input: [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "input_text",
-                                "text": JSON.stringify(data)
-                            }
-                        ]
-                    }
-                ],
+                model: STUDY_MODEL,
+                instructions: CANDIDATE_RESUME_PROMPT,
+                input: JSON.stringify(data),
                 text: {
                     "format": {
                         "type": "text"
                     }
                 },
-                reasoning: {},
                 max_output_tokens: 2048,
-                store: true,
-                include: ["web_search_call.action.sources"]
+                store: false
             });
 
-            const raw = ((response.output as any)?.[0]?.content?.[0]?.text) ?? null;
+            const raw = response.output_text;
 
             if (!raw) return null;
 
@@ -138,6 +179,7 @@ export class HundleStudyWithOpenAi {
             return parsed;
 
         } catch (error: any) {
+            console.error("Erro ao gerar resumo do candidato:", error);
             return null;
         }
     }
@@ -169,21 +211,9 @@ export class HundleStudyWithOpenAi {
             }
 
             const response = await openai.responses.create({
-                prompt: {
-                    "id": "pmpt_6a0ceb3ed4e08196a7b2e1452e0407f800520187412e4817",
-                    "version": "3"
-                },
-                input: [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "input_text",
-                                "text": JSON.stringify(data)
-                            }
-                        ]
-                    }
-                ],
+                model: STUDY_MODEL,
+                instructions: STUDY_ROADMAP_PROMPT,
+                input: JSON.stringify(data),
                 text: {
                     "format": {
                         "type": "json_schema",
@@ -346,13 +376,11 @@ export class HundleStudyWithOpenAi {
                         }
                     }
                 },
-                reasoning: {},
                 max_output_tokens: 5700,
-                store: true,
-                include: ["web_search_call.action.sources"]
+                store: false
             });
 
-            const raw = ((response.output as any)?.[0]?.content?.[0]?.text) ?? null;
+            const raw = response.output_text;
 
             if (!raw) return null;
 
@@ -360,6 +388,7 @@ export class HundleStudyWithOpenAi {
             return parsed;
 
         } catch (error: any) {
+            console.error("Erro ao gerar roadmap do estudo:", error);
             return null;
         }
     }
@@ -460,21 +489,9 @@ export class HundleStudyWithOpenAi {
             }
 
             const response = await openai.responses.create({
-                prompt: {
-                    "id": "pmpt_6ae3e6a0c9ac81969657b107ac1be9ef0390505115506e44",
-                    "version": "1"
-                },
-                input: [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "input_text",
-                                "text": JSON.stringify(data)
-                            }
-                        ]
-                    }
-                ],
+                model: VACANCY_FILTER_MODEL,
+                instructions: VACANCY_FILTER_PROMPT,
+                input: JSON.stringify(data),
                 text: {
                     "format": {
                         "type": "json_schema",
@@ -497,27 +514,12 @@ export class HundleStudyWithOpenAi {
                             ],
                             "additionalProperties": false
                         }
-                    },
-                    "verbosity": "medium"
+                    }
                 },
-                reasoning: {
-                    "summary": "auto"
-                },
-                store: false,
-                include: [
-                    "web_search_call.action.sources"
-                ]
+                store: false
             });
 
-            const output = response.output;
-            let res;
-            for (const out of output) {
-                if (out.type == "message" && out.status == "completed") {
-                    if(out.content?.[0].type == "output_text"){
-                        res = out.content?.[0]?.text;
-                    }
-                }
-            }
+            const res = response.output_text;
 
             if (!res) return null;
 
@@ -525,6 +527,7 @@ export class HundleStudyWithOpenAi {
             return parsed;
 
         } catch (error: any) {
+            console.error("Erro ao filtrar vagas do usuário:", error);
             return null;
         }
     }
