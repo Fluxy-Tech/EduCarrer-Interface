@@ -3,6 +3,8 @@ import axios from 'axios';
 
 export interface CareerProfile {
     areaOfInterest: string | null;
+    linkedinUrl: string | null;
+    portfolioUrl: string | null;
     resume: { fileName: string | null; visible: boolean; uploadedAt: string | null } | null;
 }
 
@@ -30,7 +32,7 @@ export function refreshCareer() {
     return mutate(CAREER_KEY);
 }
 
-export async function updateCareer(data: { areaOfInterest?: string | null; resumeVisible?: boolean }): Promise<Result> {
+export async function updateCareer(data: { areaOfInterest?: string | null; resumeVisible?: boolean; linkedinUrl?: string | null; portfolioUrl?: string | null }): Promise<Result> {
     const { data: res } = await axios.put(CAREER_KEY, data, config);
     await refreshCareer();
     return res;

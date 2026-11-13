@@ -36,6 +36,9 @@ model User {
   resumeFileName   String?
   resumeVisible    Boolean   @default(false)
   resumeUploadedAt DateTime?
+  // Links públicos do candidato, liberados ao recrutador depois do desbloqueio (+50 pontos no ranking)
+  linkedinUrl      String?
+  portfolioUrl     String?
 
   accounts      Account[]
   sessions      Session[]
@@ -51,6 +54,9 @@ model User {
   creditTransactions CreditTransaction[]
   vacancyFilter VacancyFilter?
   createdVacancies Vacancy[] @relation("VacancyCreatedBy")
+  // Desbloqueios: como recrutador (unlocksMade) e como candidato desbloqueado (unlocksReceived)
+  unlocksMade      CandidateUnlock[] @relation("UnlockRecruiter")
+  unlocksReceived  CandidateUnlock[] @relation("UnlockCandidate")
 }
 
 model ResetPassWord {
@@ -401,4 +407,21 @@ model VacancyFilter {
 
   userId      String   @unique
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Recrutador que pagou para ver os dados de um candidato. O acesso vale até expiresAt (60 dias) e pode ser renovado
+model CandidateUnlock {
+  id          String   @id @default(cuid())
+
+  recruiterId String
+  recruiter   User     @relation("UnlockRecruiter", fields: [recruiterId], references: [id], onDelete: Cascade)
+
+  candidateId String
+  candidate   User     @relation("UnlockCandidate", fields: [candidateId], references: [id], onDelete: Cascade)
+
+  unlockedAt  DateTime @default(now())
+  expiresAt   DateTime
+
+  @@unique([recruiterId, candidateId])
+  @@index([candidateId])
 }

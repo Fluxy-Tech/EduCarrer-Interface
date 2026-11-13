@@ -37,3 +37,7 @@ export const AREAS_OF_INTEREST = [
 export function isAreaOfInterest(value: unknown): value is (typeof AREAS_OF_INTEREST)[number] {
     return AREAS_OF_INTEREST.includes(value as any);
 }
+
+// Pontos extras no ranking de recrutadores (somados ao XP dos desafios)
+export const RANK_BONUS_LINKS = 50;   // LinkedIn ou portfólio cadastrado no perfil
+export const RANK_BONUS_RESUME = 100; // Currículo anexado e liberado para recrutadores

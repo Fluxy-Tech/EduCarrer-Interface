@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
-import { Download, Eye, EyeOff, FileText, Loader2, Target, Trash2, Upload } from "lucide-react";
+import { Check, Download, Eye, EyeOff, FileText, Globe, Linkedin, Loader2, Save, Target, Trash2, Upload } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -25,7 +26,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ToastPersonalizado } from "@/components/toast";
 import { OWN_RESUME_URL, removeResumeFile, updateCareer, uploadResumeFile, useCareer } from "@/app/services/career.swr";
-import { AREAS_OF_INTEREST } from "@/lib/users/roles";
+import { AREAS_OF_INTEREST, RANK_BONUS_LINKS, RANK_BONUS_RESUME } from "@/lib/users/roles";
+import { cn } from "@/lib/utils";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 
@@ -34,7 +36,19 @@ export function CareerCard() {
     const { career, isLoading } = useCareer();
     const inputRef = useRef<HTMLInputElement>(null);
     const [visibleOnUpload, setVisibleOnUpload] = useState(true);
-    const [busy, setBusy] = useState<"area" | "upload" | "visibility" | "remove" | null>(null);
+    const [busy, setBusy] = useState<"area" | "upload" | "visibility" | "remove" | "links" | null>(null);
+    const [linkedin, setLinkedin] = useState("");
+    const [portfolio, setPortfolio] = useState("");
+
+    // Preenche os campos com o que já está salvo
+    useEffect(() => {
+        setLinkedin(career?.linkedinUrl ?? "");
+        setPortfolio(career?.portfolioUrl ?? "");
+    }, [career?.linkedinUrl, career?.portfolioUrl]);
+
+    const linksChanged = linkedin.trim() !== (career?.linkedinUrl ?? "") || portfolio.trim() !== (career?.portfolioUrl ?? "");
+    const hasLinksBonus = !!(career?.linkedinUrl || career?.portfolioUrl);
+    const hasResumeBonus = !!career?.resume?.visible;
 
     const run = async (kind: NonNullable<typeof busy>, action: () => Promise<{ status: boolean; message: string }>) => {
         try {
@@ -78,27 +92,84 @@ export function CareerCard() {
                     <p className="eyebrow text-brand">Visibilidade para recrutadores</p>
                     <h2 className="mt-0.5 font-display text-3xl leading-tight text-ink">Área e currículo</h2>
                     <p className="text-sm text-muted-foreground">
-                        Recrutadores veem um ranking pelo desempenho nas trilhas. Escolha sua área e decida se o currículo fica disponível.
+                        Recrutadores veem um ranking pelo desempenho nas trilhas. Links e currículo liberado somam pontos extras.
                     </p>
                 </div>
             </div>
 
+            {/* Pontos extras no ranking */}
+            <div className="grid gap-3 border-b border-border bg-sky/60 p-4 sm:grid-cols-2 sm:px-6">
+                {[
+                    { done: hasLinksBonus, points: RANK_BONUS_LINKS, label: "LinkedIn ou portfólio cadastrado" },
+                    { done: hasResumeBonus, points: RANK_BONUS_RESUME, label: "Currículo liberado para recrutadores" },
+                ].map((b) => (
+                    <div key={b.label} className="flex items-center gap-3">
+                        <span className={cn(
+                            "grid size-9 shrink-0 place-items-center rounded-xl text-xs font-extrabold",
+                            b.done ? "bg-success text-white" : "bg-white text-muted-foreground border border-border"
+                        )}>
+                            {b.done ? <Check className="size-4" /> : `+${b.points}`}
+                        </span>
+                        <p className="text-sm text-ink">
+                            <strong>+{b.points} pontos</strong> · {b.label}
+                            <span className={cn("ml-1 text-xs", b.done ? "text-success" : "text-muted-foreground")}>
+                                {b.done ? "(conquistado)" : "(pendente)"}
+                            </span>
+                        </p>
+                    </div>
+                ))}
+            </div>
+
             <div className="grid gap-6 p-6 lg:grid-cols-[320px_1fr]">
-                <div className="flex flex-col gap-2">
-                    <p className="text-sm font-bold text-ink">Área de interesse</p>
-                    <p className="text-xs text-muted-foreground">Usada no filtro do ranking de recrutadores.</p>
-                    <Select
-                        value={career?.areaOfInterest ?? undefined}
-                        onValueChange={(value) => run("area", () => updateCareer({ areaOfInterest: value }))}
-                        disabled={isLoading || busy === "area"}
-                    >
-                        <SelectTrigger className="mt-1 h-11! w-full rounded-xl bg-white text-sm text-ink">
-                            <SelectValue placeholder="Selecione sua área" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {AREAS_OF_INTEREST.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                <div className="flex flex-col gap-5">
+                    <div className="flex flex-col gap-2">
+                        <p className="text-sm font-bold text-ink">Área de interesse</p>
+                        <p className="text-xs text-muted-foreground">Usada no filtro do ranking de recrutadores.</p>
+                        <Select
+                            value={career?.areaOfInterest ?? undefined}
+                            onValueChange={(value) => run("area", () => updateCareer({ areaOfInterest: value }))}
+                            disabled={isLoading || busy === "area"}
+                        >
+                            <SelectTrigger className="mt-1 h-11! w-full rounded-xl bg-white text-sm text-ink">
+                                <SelectValue placeholder="Selecione sua área" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {AREAS_OF_INTEREST.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <p className="text-sm font-bold text-ink">Links profissionais</p>
+                        <p className="text-xs text-muted-foreground">Recrutadores veem depois de desbloquear seu perfil.</p>
+                        <div className="relative">
+                            <Linkedin className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                            <Input
+                                className="h-11 pl-10"
+                                placeholder="linkedin.com/in/seu-perfil"
+                                value={linkedin}
+                                onChange={(e) => setLinkedin(e.target.value)}
+                            />
+                        </div>
+                        <div className="relative">
+                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                            <Input
+                                className="h-11 pl-10"
+                                placeholder="Portfólio, GitHub ou site"
+                                value={portfolio}
+                                onChange={(e) => setPortfolio(e.target.value)}
+                            />
+                        </div>
+                        <Button
+                            variant="create"
+                            size="sm"
+                            className="w-fit"
+                            disabled={!linksChanged || busy === "links"}
+                            onClick={() => run("links", () => updateCareer({ linkedinUrl: linkedin.trim() || null, portfolioUrl: portfolio.trim() || null }))}
+                        >
+                            {busy === "links" ? <Loader2 className="animate-spin" /> : <Save />} Salvar links
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-3">
@@ -134,7 +205,7 @@ export function CareerCard() {
                                             {resume.visible ? "Visível para recrutadores" : "Oculto dos recrutadores"}
                                         </span>
                                         <span className="block text-xs text-muted-foreground">
-                                            {resume.visible ? "Recrutadores podem baixar o seu currículo no ranking." : "Só você tem acesso ao arquivo."}
+                                            {resume.visible ? "Recrutadores que desbloquearem seu perfil podem baixar o currículo." : "Só você tem acesso ao arquivo."}
                                         </span>
                                     </span>
                                 </span>

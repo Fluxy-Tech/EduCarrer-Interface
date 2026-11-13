@@ -14,7 +14,10 @@ import {
   Gift,
   MessagesSquare,
   RefreshCw,
+  LockOpen,
+  Trophy,
 } from "lucide-react";
+import { useSession } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -34,7 +37,8 @@ import {
   CREDIT_COSTS,
   CREDIT_PACKAGES,
   CREDIT_REASON_LABELS,
-  PLANS,
+  CANDIDATE_UNLOCK_DAYS,
+  getPlansForRole,
   VACANCY_FREE_REFRESH_DAYS,
   WELCOME_CREDITS,
   formatCredits,
@@ -55,6 +59,10 @@ export default function PlansPage() {
   const { credits, isLoading, refresh } = useCredits();
   const { openCheckout } = useCreditsDialogs();
   const [canceling, setCanceling] = useState(false);
+  const { data: session } = useSession();
+  const isRecruiter = session?.user?.role === "recruiter";
+  // Recrutador vê o plano de recrutador; usuários (e admin) veem os planos de estudo
+  const plans = getPlansForRole(isRecruiter ? "recruiter" : "user");
 
   const subscription = credits?.subscription ?? null;
   const subscribedPlan = subscription && subscription.status !== "PENDING" ? subscription.plan : null;
@@ -73,7 +81,28 @@ export default function PlansPage() {
     }
   };
 
-  const usage = [
+  const recruiterUsage = [
+    {
+      icon: LockOpen,
+      title: "Desbloquear um candidato",
+      cost: CREDIT_COSTS.CANDIDATE_UNLOCK,
+      detail: `Libera por ${CANDIDATE_UNLOCK_DAYS} dias os links, o currículo, as habilidades, as experiências e os estudos concluídos do candidato.`,
+    },
+    {
+      icon: RefreshCw,
+      title: "Renovar o acesso depois do prazo",
+      cost: CREDIT_COSTS.CANDIDATE_UNLOCK,
+      detail: `Passados ${CANDIDATE_UNLOCK_DAYS} dias, o candidato volta a ficar bloqueado e pode ser desbloqueado de novo.`,
+    },
+    {
+      icon: Trophy,
+      title: "Ver o ranking e filtrar por área ou stack",
+      cost: 0,
+      detail: "Nome, patente e pontuação dos candidatos ficam sempre visíveis.",
+    },
+  ];
+
+  const usage = isRecruiter ? recruiterUsage : [
     {
       icon: BookOpenCheck,
       title: "Gerar um estudo",
@@ -195,8 +224,8 @@ export default function PlansPage() {
           <p className="text-sm text-muted-foreground">Os créditos do plano são renovados a cada mês pago e usados antes dos avulsos.</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3 stagger">
-          {PLANS.map((plan) => {
+        <div className={cn("grid gap-4 stagger", plans.length > 1 ? "md:grid-cols-3" : "max-w-md")}>
+          {plans.map((plan) => {
             const current = subscribedPlan === plan.id;
 
             return (
@@ -207,7 +236,7 @@ export default function PlansPage() {
                   plan.highlight ? "border-brand ring-4 ring-brand-soft" : "border-border"
                 )}
               >
-                {plan.highlight && (
+                {plan.highlight && plan.audience === "user" && (
                   <span className="absolute -top-3 left-6 rounded-full bg-brand px-3 py-1 text-[11px] font-bold text-white">
                     Mais escolhido
                   </span>
@@ -218,8 +247,18 @@ export default function PlansPage() {
 
                 <ul className="mt-6 flex flex-col gap-2 text-sm text-ink/80">
                   <li className="flex gap-2"><Check className="size-4 shrink-0 text-success" /> {formatCredits(plan.credits)} créditos por mês</li>
-                  <li className="flex gap-2"><Check className="size-4 shrink-0 text-success" /> Até {Math.floor(plan.credits / CREDIT_COSTS.STUDY)} estudos ou {formatCredits(Math.floor(plan.credits / CREDIT_COSTS.AGENT_MESSAGE))} mensagens</li>
-                  <li className="flex gap-2"><Check className="size-4 shrink-0 text-success" /> Vagas recomendadas a cada {VACANCY_FREE_REFRESH_DAYS} dias</li>
+                  {plan.audience === "recruiter" ? (
+                    <>
+                      <li className="flex gap-2"><Check className="size-4 shrink-0 text-success" /> Até {Math.floor(plan.credits / CREDIT_COSTS.CANDIDATE_UNLOCK)} candidatos desbloqueados por mês</li>
+                      <li className="flex gap-2"><Check className="size-4 shrink-0 text-success" /> Cada desbloqueio vale {CANDIDATE_UNLOCK_DAYS} dias</li>
+                      <li className="flex gap-2"><Check className="size-4 shrink-0 text-success" /> Currículo, contato, habilidades e estudos concluídos</li>
+                    </>
+                  ) : (
+                    <>
+                      <li className="flex gap-2"><Check className="size-4 shrink-0 text-success" /> Até {Math.floor(plan.credits / CREDIT_COSTS.STUDY)} estudos ou {formatCredits(Math.floor(plan.credits / CREDIT_COSTS.AGENT_MESSAGE))} mensagens</li>
+                      <li className="flex gap-2"><Check className="size-4 shrink-0 text-success" /> Vagas recomendadas a cada {VACANCY_FREE_REFRESH_DAYS} dias</li>
+                    </>
+                  )}
                   <li className="flex gap-2"><Check className="size-4 shrink-0 text-success" /> Cancele quando quiser</li>
                 </ul>
 

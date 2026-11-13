@@ -2,7 +2,7 @@ import { addDays, addMonths } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { asaas, asaasDate, AsaasError, AsaasPayment } from "@/lib/services/asaas";
 import { grantExtraCredits, grantPlanCredits } from "@/lib/services/credits";
-import { PLAN_GRACE_DAYS, formatCredits, getCreditPackage, getPlan } from "@/lib/credits/config";
+import { PLAN_GRACE_DAYS, canSubscribePlan, formatCredits, getCreditPackage, getPlan } from "@/lib/credits/config";
 import { isValidCpfCnpj, onlyDigits } from "@/lib/utils/document";
 
 const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"];
@@ -80,6 +80,12 @@ function billingError(e: unknown): BillingResult {
 export async function subscribeToPlan(userId: string, planId: string, cpfCnpj?: string | null): Promise<BillingResult> {
     const plan = getPlan(planId);
     if (!plan) return { status: false, message: "Plano inválido" };
+
+    // Recrutador só assina o plano de recrutador e usuário só os planos de estudo
+    const owner = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (!canSubscribePlan(owner?.role, plan.id)) {
+        return { status: false, message: "Este plano não está disponível para o seu perfil" };
+    }
 
     try {
         const current = await prisma.subscription.findFirst({

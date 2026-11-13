@@ -89,6 +89,12 @@ const recruiterItems = [
     url: "/recruiter/vagas",
     icon: BriefcaseBusiness,
   },
+  {
+    title: "Planos",
+    description: "Créditos para desbloquear",
+    url: "/plans",
+    icon: Crown,
+  },
 ]
 
 const adminItems = [
@@ -233,20 +239,12 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="relative p-3">
-        {isRecruiter ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-2">
-            <p className="eyebrow text-gold mb-1">Perfil recrutador</p>
-            <p className="text-xs leading-relaxed text-white/60">
-              Encontre candidatos pelo desempenho nas trilhas e baixe os currículos que eles autorizaram.
-            </p>
-          </div>
-        ) : (
         <Link
           href="/plans"
           className="group block rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-2 transition-colors hover:bg-white/[0.07]"
         >
           <div className="flex items-center justify-between">
-            <p className="eyebrow text-gold">Créditos de IA</p>
+            <p className="eyebrow text-gold">{isRecruiter ? "Créditos" : "Créditos de IA"}</p>
             <Coins className="size-4 text-gold" />
           </div>
           <p className="mt-1 text-2xl font-extrabold text-white tabular-nums">
@@ -257,7 +255,6 @@ export function AppSidebar() {
             <span className="ml-1 text-gold group-hover:underline">· {credits && credits.total < 2000 ? "Recarregar" : "Ver planos"}</span>
           </p>
         </Link>
-        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

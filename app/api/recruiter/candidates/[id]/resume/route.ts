@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { getResumeFile, pdfResponseHeaders } from "@/lib/services/userResume";
+import { canViewCandidate } from "@/lib/services/candidates";
 
-// Download do currículo de um candidato. Só funciona se o candidato autorizou a visibilidade
+// Download do currículo de um candidato: exige desbloqueio ativo e que o candidato tenha liberado o currículo
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole(req, ["recruiter", "admin"]);
+  const { session, error } = await requireRole(req, ["recruiter", "admin"]);
   if (error) return error;
 
   try {
     const { id } = await params;
+
+    const allowed = await canViewCandidate({ id: session.user.id, isAdmin: session.user.role === "admin" }, id);
+    if (!allowed) {
+      return NextResponse.json(
+        { status: false, message: "Desbloqueie o candidato para baixar o currículo" },
+        { status: 403 }
+      );
+    }
+
     const file = await getResumeFile(id, true);
 
     if (!file) {

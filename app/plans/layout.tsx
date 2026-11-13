@@ -7,6 +7,7 @@ export default function PlansLayout({
 }) {
   return (
     <AppShell
+      allowedRoles={["user", "recruiter", "admin"]}
       eyebrow="Planos e créditos"
       title="Seus créditos de IA"
       description="Acompanhe seu saldo, assine um plano mensal ou compre créditos avulsos quando precisar."

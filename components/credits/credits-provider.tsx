@@ -19,7 +19,7 @@ const CreditsContext = createContext<CreditsContextValue>({
 export const useCreditsDialogs = () => useContext(CreditsContext);
 
 // Rotas que consomem créditos: após a resposta, o saldo exibido é atualizado
-const SPENDING_ROUTES = /\/api\/(study|agent|vacancy\/refresh)\/?(\?.*)?$/;
+const SPENDING_ROUTES = /\/api\/(study|agent|vacancy\/refresh|recruiter\/candidates\/[^/]+\/unlock)\/?(\?.*)?$/;
 
 // Abre a oferta de compra sempre que qualquer chamada da API responder 402 (créditos insuficientes)
 export function CreditsProvider({ children }: { children: React.ReactNode }) {

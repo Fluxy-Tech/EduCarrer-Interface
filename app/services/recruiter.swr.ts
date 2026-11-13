@@ -7,13 +7,42 @@ export interface RankingEntry {
     userId: string;
     name: string;
     areaOfInterest: string | null;
-    resumeAvailable: boolean;
+    points: number;
     xp: number;
+    linksBonus: number;
+    resumeBonus: number;
     levelsCompleted: number;
     studies: number;
     studiesCompleted: number;
     rank: string;
-    bestProgress: number;
+    unlocked: boolean;
+    unlockExpiresAt: string | null;
+    // Preenchidos só depois do desbloqueio
+    linkedinUrl: string | null;
+    portfolioUrl: string | null;
+    resumeAvailable: boolean;
+}
+
+export interface CandidateDetails {
+    id: string;
+    name: string;
+    areaOfInterest: string | null;
+    linkedinUrl: string | null;
+    portfolioUrl: string | null;
+    resumeAvailable: boolean;
+    skills: { id: string; name: string; level: number; about: string | null }[];
+    experiences: { id: string; name: string; seniority: string; about: string; startDate: string | null; endDate: string | null; currentJob: boolean }[];
+    completedStudies: {
+        id: string;
+        title: string;
+        vacancy: { title: string; company: string | null; level: string | null } | null;
+        levels: number;
+        skills: string[];
+        xp: number;
+        completedAt: string | null;
+    }[];
+    totalStudies: number;
+    unlockExpiresAt: string | null;
 }
 
 export interface RecruiterVacancy {
@@ -37,13 +66,34 @@ const fetcher = async (url: string) => {
     return data
 }
 
-export function useRanking(area: string) {
-    const query = area === "todas" ? "" : `?area=${encodeURIComponent(area)}`;
-    const { data, error, isLoading } = useSWR<{ ranking: RankingEntry[] }>(`${URL}/api/recruiter/ranking${query}`, fetcher, {
+export function useRanking(area: string, stack: string) {
+    const params = new URLSearchParams();
+    if (area !== "todas") params.set("area", area);
+    if (stack.trim()) params.set("stack", stack.trim());
+
+    const { data, error, isLoading, mutate: refresh } = useSWR<{ ranking: RankingEntry[] }>(`${URL}/api/recruiter/ranking?${params.toString()}`, fetcher, {
         keepPreviousData: true,
     });
 
-    return { ranking: data?.ranking ?? [], isLoading, isError: error };
+    return { ranking: data?.ranking ?? [], isLoading, isError: error, refresh };
+}
+
+// Consome créditos e libera o candidato por 60 dias (402 abre a oferta de créditos automaticamente)
+export async function unlockCandidate(userId: string): Promise<{ status: boolean; message: string; code?: string; alreadyUnlocked?: boolean }> {
+    const { data } = await axios.post(`${URL}/api/recruiter/candidates/${userId}/unlock`, {}, {
+        withCredentials: true,
+        validateStatus: (status) => status < 500
+    });
+    return data;
+}
+
+export function useCandidateDetails(userId: string | null) {
+    const { data, isLoading } = useSWR<{ status: boolean; candidate?: CandidateDetails; message?: string }>(
+        userId ? `${URL}/api/recruiter/candidates/${userId}` : null,
+        async (url: string) => (await axios.get(url, { withCredentials: true, validateStatus: (s) => s < 500 })).data
+    );
+
+    return { candidate: data?.candidate ?? null, message: data?.message, isLoading };
 }
 
 // Link direto: o navegador baixa o PDF com o cookie da sessão (o servidor confere a autorização do candidato)

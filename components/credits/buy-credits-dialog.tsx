@@ -10,7 +10,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CREDIT_PACKAGES, PLANS, formatCredits, formatPrice } from "@/lib/credits/config";
+import { CREDIT_PACKAGES, formatCredits, formatPrice, getPlansForRole } from "@/lib/credits/config";
+import { useSession } from "@/lib/auth/auth-client";
 import { useCredits } from "@/app/services/credits.swr";
 import { CheckoutItem } from "@/components/credits/checkout-dialog";
 
@@ -24,6 +25,9 @@ interface BuyCreditsDialogProps {
 // Oferta exibida quando o usuário tenta usar a IA sem créditos suficientes
 export function BuyCreditsDialog({ open, reason, onClose, onSelect }: BuyCreditsDialogProps) {
     const { credits } = useCredits();
+    const { data: session } = useSession();
+    // Recrutador vê o plano de recrutador; usuário vê os planos de estudo
+    const plans = getPlansForRole(session?.user?.role === "recruiter" ? "recruiter" : "user");
 
     return (
         <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
@@ -61,7 +65,7 @@ export function BuyCreditsDialog({ open, reason, onClose, onSelect }: BuyCredits
                         <Crown className="size-4 text-brand" /> Ou assine um plano mensal
                     </p>
                     <div className="grid gap-2">
-                        {PLANS.map((plan) => (
+                        {plans.map((plan) => (
                             <button
                                 key={plan.id}
                                 onClick={() => onSelect({ kind: "plan", id: plan.id })}

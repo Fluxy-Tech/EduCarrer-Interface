@@ -26,11 +26,13 @@ function safeFileName(name: string) {
 export async function getCareerProfile(userId: string) {
     const user = await prisma.user.findUniqueOrThrow({
         where: { id: userId },
-        select: { areaOfInterest: true, resumeKey: true, resumeFileName: true, resumeVisible: true, resumeUploadedAt: true },
+        select: { areaOfInterest: true, linkedinUrl: true, portfolioUrl: true, resumeKey: true, resumeFileName: true, resumeVisible: true, resumeUploadedAt: true },
     });
 
     return {
         areaOfInterest: user.areaOfInterest,
+        linkedinUrl: user.linkedinUrl,
+        portfolioUrl: user.portfolioUrl,
         resume: user.resumeKey
             ? { fileName: user.resumeFileName, visible: user.resumeVisible, uploadedAt: user.resumeUploadedAt }
             : null,
@@ -65,8 +67,38 @@ export async function uploadUserResume(userId: string, file: File, visible: bool
     };
 }
 
-export async function updateCareerProfile(userId: string, data: { areaOfInterest?: string | null; resumeVisible?: boolean }) {
-    const update: { areaOfInterest?: string | null; resumeVisible?: boolean } = {};
+// Aceita só links http(s); vazio remove o link. LinkedIn precisa ser do domínio linkedin.com
+function normalizeUrl(value: string | null, onlyLinkedin = false): { ok: true; url: string | null } | { ok: false } {
+    const raw = (value ?? "").trim();
+    if (!raw) return { ok: true, url: null };
+
+    try {
+        const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+        if (!["http:", "https:"].includes(url.protocol) || !url.hostname.includes(".")) return { ok: false };
+        if (onlyLinkedin && !/(^|\.)linkedin\.com$/i.test(url.hostname)) return { ok: false };
+        return { ok: true, url: url.toString().slice(0, 300) };
+    } catch {
+        return { ok: false };
+    }
+}
+
+export async function updateCareerProfile(
+    userId: string,
+    data: { areaOfInterest?: string | null; resumeVisible?: boolean; linkedinUrl?: string | null; portfolioUrl?: string | null }
+) {
+    const update: { areaOfInterest?: string | null; resumeVisible?: boolean; linkedinUrl?: string | null; portfolioUrl?: string | null } = {};
+
+    if (data.linkedinUrl !== undefined) {
+        const linkedin = normalizeUrl(data.linkedinUrl, true);
+        if (!linkedin.ok) return { status: false, message: "Informe um link válido do LinkedIn (linkedin.com/in/...)" };
+        update.linkedinUrl = linkedin.url;
+    }
+
+    if (data.portfolioUrl !== undefined) {
+        const portfolio = normalizeUrl(data.portfolioUrl);
+        if (!portfolio.ok) return { status: false, message: "Informe um link válido para o portfólio" };
+        update.portfolioUrl = portfolio.url;
+    }
 
     if (data.areaOfInterest !== undefined) {
         if (data.areaOfInterest !== null && !isAreaOfInterest(data.areaOfInterest)) {

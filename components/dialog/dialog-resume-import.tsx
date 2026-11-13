@@ -263,7 +263,7 @@ export function DialogResumeImport() {
                 <span>
                   <span className="block text-sm font-bold text-ink">Deixar meu currículo visível para recrutadores</span>
                   <span className="block text-xs text-muted-foreground">
-                    Guardamos este PDF no seu perfil e recrutadores poderão baixá-lo no ranking. Você pode ocultar ou remover quando quiser.
+                    Guardamos este PDF no seu perfil (+100 pontos no ranking) e recrutadores que desbloquearem seu perfil poderão baixá-lo. Você pode ocultar ou remover quando quiser.
                   </span>
                 </span>
               </label>
