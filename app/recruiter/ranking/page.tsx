@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { ChevronRight, Code2, Coins, Download, Globe, Linkedin, Loader2, Lock, LockOpen, Medal, Search, Trophy, Users } from "lucide-react";
+import { Check, ChevronRight, Code2, Coins, Download, Globe, Linkedin, Loader2, Lock, LockOpen, Medal, Search, Trophy, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +32,7 @@ export default function RankingPage() {
   const isAdmin = session?.user?.role === "admin";
   const { credits } = useCredits();
 
-  const [area, setArea] = useState("todas");
+  const [areas, setAreas] = useState<string[]>([]);
   const [stackInput, setStackInput] = useState("");
   const [stack, setStack] = useState("");
   const [search, setSearch] = useState("");
@@ -46,7 +46,10 @@ export default function RankingPage() {
     return () => clearTimeout(t);
   }, [stackInput]);
 
-  const { ranking, isLoading, refresh } = useRanking(area, stack);
+  const { ranking, isLoading, refresh } = useRanking(areas, stack);
+
+  const toggleArea = (a: string) =>
+    setAreas((current) => (current.includes(a) ? current.filter((x) => x !== a) : [...current, a]));
 
   const term = search.trim().toLowerCase();
   const list = ranking.filter((r) => !term || r.name.toLowerCase().includes(term));
@@ -109,20 +112,40 @@ export default function RankingPage() {
 
       {/* Filtros: área e stack */}
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap gap-2">
-          {["todas", ...AREAS_OF_INTEREST].map((a) => (
-            <button
-              key={a}
-              onClick={() => setArea(a)}
-              className={cn(
-                "cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition-colors",
-                area === a ? "border-ink bg-ink text-white" : "border-border bg-white text-ink/70 hover:border-brand/40"
-              )}
-            >
-              {a === "todas" ? "Todas as áreas" : a}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por áreas de interesse">
+          <button
+            onClick={() => setAreas([])}
+            aria-pressed={areas.length === 0}
+            className={cn(
+              "cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition-colors",
+              areas.length === 0 ? "border-ink bg-ink text-white" : "border-border bg-white text-ink/70 hover:border-brand/40"
+            )}
+          >
+            Todas as áreas
+          </button>
+          {AREAS_OF_INTEREST.map((a) => {
+            const selected = areas.includes(a);
+            return (
+              <button
+                key={a}
+                onClick={() => toggleArea(a)}
+                aria-pressed={selected}
+                className={cn(
+                  "inline-flex cursor-pointer items-center gap-1 rounded-full border px-4 py-2 text-xs font-bold transition-colors",
+                  selected ? "border-ink bg-ink text-white" : "border-border bg-white text-ink/70 hover:border-brand/40"
+                )}
+              >
+                {selected && <Check className="size-3.5" />}
+                {a}
+              </button>
+            );
+          })}
         </div>
+        {areas.length > 1 && (
+          <p className="text-xs text-muted-foreground">
+            Mostrando candidatos com interesse em ao menos uma das {areas.length} áreas selecionadas.
+          </p>
+        )}
 
         <div className="surface grid gap-3 p-3 sm:grid-cols-2">
           <div className="relative">
@@ -161,7 +184,7 @@ export default function RankingPage() {
             <Trophy className="size-6" />
           </span>
           <p className="max-w-md text-sm text-muted-foreground">
-            Nenhum candidato encontrado{area !== "todas" ? ` em ${area}` : ""}{stack ? ` com a stack "${stack}"` : ""}.
+            Nenhum candidato encontrado{areas.length ? ` em ${areas.join(", ")}` : ""}{stack ? ` com a stack "${stack}"` : ""}.
           </p>
         </div>
       ) : (
@@ -188,7 +211,13 @@ export default function RankingPage() {
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
                     <span className="rounded-full bg-gold-soft px-2 py-0.5 font-bold text-gold">{c.rank}</span>
-                    <span className="rounded-full bg-sky px-2 py-0.5 font-semibold text-ink/70">{c.areaOfInterest ?? "Área não informada"}</span>
+                    {c.areasOfInterest.length ? (
+                      c.areasOfInterest.map((a) => (
+                        <span key={a} className="rounded-full bg-sky px-2 py-0.5 font-semibold text-ink/70">{a}</span>
+                      ))
+                    ) : (
+                      <span className="rounded-full bg-sky px-2 py-0.5 font-semibold text-ink/70">Área não informada</span>
+                    )}
                     {c.unlocked && c.unlockExpiresAt && (
                       <span className="text-muted-foreground">liberado até {format(new Date(c.unlockExpiresAt), "dd/MM")}</span>
                     )}

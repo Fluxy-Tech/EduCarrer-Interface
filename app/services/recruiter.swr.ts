@@ -6,7 +6,7 @@ export interface RankingEntry {
     position: number;
     userId: string;
     name: string;
-    areaOfInterest: string | null;
+    areasOfInterest: string[];
     points: number;
     xp: number;
     linksBonus: number;
@@ -26,7 +26,7 @@ export interface RankingEntry {
 export interface CandidateDetails {
     id: string;
     name: string;
-    areaOfInterest: string | null;
+    areasOfInterest: string[];
     linkedinUrl: string | null;
     portfolioUrl: string | null;
     resumeAvailable: boolean;
@@ -66,9 +66,9 @@ const fetcher = async (url: string) => {
     return data
 }
 
-export function useRanking(area: string, stack: string) {
+export function useRanking(areas: string[], stack: string) {
     const params = new URLSearchParams();
-    if (area !== "todas") params.set("area", area);
+    areas.forEach((a) => params.append("area", a));
     if (stack.trim()) params.set("stack", stack.trim());
 
     const { data, error, isLoading, mutate: refresh } = useSWR<{ ranking: RankingEntry[] }>(`${URL}/api/recruiter/ranking?${params.toString()}`, fetcher, {

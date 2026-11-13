@@ -6,7 +6,7 @@ export interface AdminUser {
     name: string | null;
     email: string;
     role: string;
-    areaOfInterest: string | null;
+    areasOfInterest: string[];
     createdAt: string;
     _count: { study: number; createdVacancies: number };
 }

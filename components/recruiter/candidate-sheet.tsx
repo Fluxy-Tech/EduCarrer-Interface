@@ -22,7 +22,7 @@ export function CandidateSheet({ userId, onClose }: { userId: string | null; onC
         <Sheet open={!!userId} onOpenChange={(open) => !open && onClose()}>
             <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
                 <SheetHeader>
-                    <p className="eyebrow text-brand">{candidate?.areaOfInterest ?? "Candidato"}</p>
+                    <p className="eyebrow text-brand">{candidate?.areasOfInterest.length ? candidate.areasOfInterest.join(" · ") : "Candidato"}</p>
                     <SheetTitle className="font-display text-3xl font-normal text-ink">{candidate?.name ?? "Carregando..."}</SheetTitle>
                     <SheetDescription>
                         {candidate?.unlockExpiresAt

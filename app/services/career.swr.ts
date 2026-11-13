@@ -2,7 +2,9 @@ import useSWR, { mutate } from 'swr';
 import axios from 'axios';
 
 export interface CareerProfile {
-    areaOfInterest: string | null;
+    // Pontos no ranking dos recrutadores (XP + bônus de links e currículo)
+    rankPoints: number;
+    areasOfInterest: string[];
     linkedinUrl: string | null;
     portfolioUrl: string | null;
     resume: { fileName: string | null; visible: boolean; uploadedAt: string | null } | null;
@@ -19,8 +21,9 @@ const CAREER_KEY = `${URL}/api/user/career`;
 
 const config = { withCredentials: true, validateStatus: (status: number) => status < 500 };
 
-export function useCareer() {
-    const { data, isLoading } = useSWR<{ career: CareerProfile | null }>(CAREER_KEY, async (url: string) => {
+// enabled = false não faz a requisição (ex.: recrutador, que não tem perfil de carreira)
+export function useCareer(enabled = true) {
+    const { data, isLoading } = useSWR<{ career: CareerProfile | null }>(enabled ? CAREER_KEY : null, async (url: string) => {
         const { data } = await axios.get(url, { withCredentials: true });
         return data;
     });
@@ -32,7 +35,7 @@ export function refreshCareer() {
     return mutate(CAREER_KEY);
 }
 
-export async function updateCareer(data: { areaOfInterest?: string | null; resumeVisible?: boolean; linkedinUrl?: string | null; portfolioUrl?: string | null }): Promise<Result> {
+export async function updateCareer(data: { areasOfInterest?: string[]; resumeVisible?: boolean; linkedinUrl?: string | null; portfolioUrl?: string | null }): Promise<Result> {
     const { data: res } = await axios.put(CAREER_KEY, data, config);
     await refreshCareer();
     return res;

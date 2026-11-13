@@ -6,7 +6,7 @@ import { RANK_BONUS_LINKS, RANK_BONUS_RESUME } from "@/lib/users/roles";
 interface RankingRow {
     userId: string;
     name: string | null;
-    areaOfInterest: string | null;
+    areasOfInterest: string[];
     linkedinUrl: string | null;
     portfolioUrl: string | null;
     resumeAvailable: boolean;
@@ -22,7 +22,8 @@ interface RankingRow {
 }
 
 interface RankingOptions {
-    area: string | null;
+    // Áreas de interesse selecionadas: entra quem tiver ao menos uma delas (vazio = todas)
+    areas: string[];
     // Busca nas habilidades do candidato (ex.: "React", "Node")
     stack: string | null;
     viewerId: string;
@@ -37,8 +38,8 @@ const likeTerm = (value: string) => `%${value.replace(/[\\%_]/g, (c) => `\\${c}`
 // Ranking de candidatos para recrutadores.
 // Pontos = XP dos desafios + 50 (LinkedIn ou portfólio) + 100 (currículo liberado para recrutadores).
 // Dados de contato e currículo só saem para quem desbloqueou o candidato nos últimos 60 dias (ou admin).
-export async function getUsersRanking({ area, stack, viewerId, viewerIsAdmin, limit = 100 }: RankingOptions) {
-    const areaFilter = area ? Prisma.sql`AND u."areaOfInterest" = ${area}` : Prisma.empty;
+export async function getUsersRanking({ areas, stack, viewerId, viewerIsAdmin, limit = 100 }: RankingOptions) {
+    const areaFilter = areas.length ? Prisma.sql`AND u."areasOfInterest" && ${areas}::text[]` : Prisma.empty;
     const stackFilter = stack
         ? Prisma.sql`AND EXISTS (SELECT 1 FROM "Skill" sk WHERE sk."userId" = u."id" AND sk."name" ILIKE ${likeTerm(stack)})`
         : Prisma.empty;
@@ -67,7 +68,7 @@ export async function getUsersRanking({ area, stack, viewerId, viewerIsAdmin, li
         scored AS (
             SELECT u."id" AS "userId",
                    u."name",
-                   u."areaOfInterest",
+                   u."areasOfInterest",
                    u."linkedinUrl",
                    u."portfolioUrl",
                    (u."resumeVisible" AND u."resumeKey" IS NOT NULL) AS "resumeAvailable",
@@ -98,7 +99,7 @@ export async function getUsersRanking({ area, stack, viewerId, viewerIsAdmin, li
             position: i + 1,
             userId: r.userId,
             name: r.name || "Candidato sem nome",
-            areaOfInterest: r.areaOfInterest,
+            areasOfInterest: r.areasOfInterest,
             points: r.points,
             xp: r.xp,
             linksBonus: r.linksBonus,
@@ -116,4 +117,25 @@ export async function getUsersRanking({ area, stack, viewerId, viewerIsAdmin, li
             resumeAvailable: unlocked ? r.resumeAvailable : false,
         };
     });
+}
+
+// Pontos de ranking de um usuário, com a mesma fórmula do ranking dos recrutadores:
+// XP dos desafios + bônus de links + bônus de currículo liberado
+export async function getUserRankPoints(user: {
+    id: string;
+    linkedinUrl: string | null;
+    portfolioUrl: string | null;
+    resumeKey: string | null;
+    resumeVisible: boolean;
+}) {
+    const { _sum } = await prisma.studyGap.aggregate({
+        _sum: { bestScore: true },
+        where: { section: { type: GAPS_SECTION_TYPE, study: { userId: user.id } } },
+    });
+
+    const xp = (_sum.bestScore ?? 0) * XP_PER_CORRECT_ANSWER;
+    const linksBonus = user.linkedinUrl || user.portfolioUrl ? RANK_BONUS_LINKS : 0;
+    const resumeBonus = user.resumeVisible && user.resumeKey ? RANK_BONUS_RESUME : 0;
+
+    return xp + linksBonus + resumeBonus;
 }

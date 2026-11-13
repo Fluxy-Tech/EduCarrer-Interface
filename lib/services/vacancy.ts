@@ -26,15 +26,21 @@ function getNextFreeRefreshAt(filteredAt: Date | null) {
 
 // Roda a IA sobre o perfil atual. null = falha da IA, [] = perfil sem habilidades ou nenhuma vaga compatível
 async function runVacancyFilter(userId: string): Promise<VacancyDTO[] | null> {
-    const [vacancies, skills, experiences] = await Promise.all([
+    const [vacancies, skills, experiences, user] = await Promise.all([
         vacancysRepositoryDataBase.getVacancys(),
         getSkillByUserId(userId),
-        getExperienceByUserId(userId)
+        getExperienceByUserId(userId),
+        prisma.user.findUnique({ where: { id: userId }, select: { areasOfInterest: true } })
     ]);
 
     if (skills.length === 0) return [];
 
-    return await filterVacanciesBaseOfUserProfileWithAgenteAI(vacancies.filter((v) => v.active), skills, experiences);
+    return await filterVacanciesBaseOfUserProfileWithAgenteAI(
+        vacancies.filter((v) => v.active),
+        skills,
+        experiences,
+        user?.areasOfInterest ?? []
+    );
 }
 
 // Vagas do usuário: a filtragem da IA fica salva e só é refeita (grátis) a cada VACANCY_FREE_REFRESH_DAYS dias
@@ -198,13 +204,14 @@ export async function getNumberTotalCompaniesByVacancys() {
 }
 
 // Filtrar vagas do usuario atraves do nosso agente de IA
-async function filterVacanciesBaseOfUserProfileWithAgenteAI(vacancies: VacancyDTO[], skills: SkillDTO[], experiences: ExperienceDTO[]): Promise<VacancyDTO[] | null> {
+async function filterVacanciesBaseOfUserProfileWithAgenteAI(vacancies: VacancyDTO[], skills: SkillDTO[], experiences: ExperienceDTO[], areasOfInterest: string[]): Promise<VacancyDTO[] | null> {
     const openAi = new HundleStudyWithOpenAi();
 
     const response = await openAi.filterVacancysToUser(
         skills,
         experiences,
-        vacancies
+        vacancies,
+        areasOfInterest
     );
 
     if (!response) {

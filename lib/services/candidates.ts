@@ -75,7 +75,7 @@ export async function getCandidateDetails(viewer: Viewer, candidateId: string) {
             id: true,
             name: true,
             role: true,
-            areaOfInterest: true,
+            areasOfInterest: true,
             linkedinUrl: true,
             portfolioUrl: true,
             resumeKey: true,
@@ -131,7 +131,7 @@ export async function getCandidateDetails(viewer: Viewer, candidateId: string) {
         candidate: {
             id: user.id,
             name: user.name || "Candidato sem nome",
-            areaOfInterest: user.areaOfInterest,
+            areasOfInterest: user.areasOfInterest,
             linkedinUrl: user.linkedinUrl,
             portfolioUrl: user.portfolioUrl,
             resumeAvailable: !!user.resumeKey && user.resumeVisible,

@@ -35,6 +35,13 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        // No cadastro público a pessoa escolhe "Candidato" ou "Recrutador" (campo accountType).
+        // Só aceitamos esses dois: nunca é possível virar admin pelo cadastro.
+        before: async (user, ctx) => {
+          if (ctx?.path !== "/sign-up/email") return;
+          const accountType = (ctx.body as Record<string, unknown> | undefined)?.accountType;
+          return { data: { ...user, role: accountType === "recruiter" ? "recruiter" : "user" } };
+        },
         // Novo usuário já nasce com os créditos de boas-vindas (default da coluna); aqui só registramos no extrato
         after: async (user) => {
           await registerWelcomeCredits(user.id);

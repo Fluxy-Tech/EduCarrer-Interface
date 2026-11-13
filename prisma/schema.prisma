@@ -29,8 +29,8 @@ model User {
   cpfCnpj         String?
   asaasCustomerId String?   @unique
 
-  // Área de interesse (Backend, Frontend...) usada no ranking dos recrutadores
-  areaOfInterest   String?
+  // Áreas de interesse (Backend, Frontend...) usadas no filtro do ranking dos recrutadores
+  areasOfInterest  String[]  @default([])
   // Currículo no bucket; recrutadores só baixam quando resumeVisible = true
   resumeKey        String?
   resumeFileName   String?

@@ -7,13 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -103,13 +96,7 @@ export function CareerCard() {
                     { done: hasLinksBonus, points: RANK_BONUS_LINKS, label: "LinkedIn ou portfólio cadastrado" },
                     { done: hasResumeBonus, points: RANK_BONUS_RESUME, label: "Currículo liberado para recrutadores" },
                 ].map((b) => (
-                    <div key={b.label} className="flex items-center gap-3">
-                        <span className={cn(
-                            "grid size-9 shrink-0 place-items-center rounded-xl text-xs font-extrabold",
-                            b.done ? "bg-success text-white" : "bg-white text-muted-foreground border border-border"
-                        )}>
-                            {b.done ? <Check className="size-4" /> : `+${b.points}`}
-                        </span>
+                    <div key={b.label}>
                         <p className="text-sm text-ink">
                             <strong>+{b.points} pontos</strong> · {b.label}
                             <span className={cn("ml-1 text-xs", b.done ? "text-success" : "text-muted-foreground")}>
@@ -123,20 +110,35 @@ export function CareerCard() {
             <div className="grid gap-6 p-6 lg:grid-cols-[320px_1fr]">
                 <div className="flex flex-col gap-5">
                     <div className="flex flex-col gap-2">
-                        <p className="text-sm font-bold text-ink">Área de interesse</p>
-                        <p className="text-xs text-muted-foreground">Usada no filtro do ranking de recrutadores.</p>
-                        <Select
-                            value={career?.areaOfInterest ?? undefined}
-                            onValueChange={(value) => run("area", () => updateCareer({ areaOfInterest: value }))}
-                            disabled={isLoading || busy === "area"}
-                        >
-                            <SelectTrigger className="mt-1 h-11! w-full rounded-xl bg-white text-sm text-ink">
-                                <SelectValue placeholder="Selecione sua área" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {AREAS_OF_INTEREST.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
+                        <p className="text-sm font-bold text-ink">Áreas de interesse</p>
+                        <p className="text-xs text-muted-foreground">Selecione quantas quiser. Usadas no filtro do ranking de recrutadores.</p>
+                        <div role="group" aria-label="Áreas de interesse" className="mt-1 flex flex-wrap gap-2">
+                            {AREAS_OF_INTEREST.map((a) => {
+                                const selected = career?.areasOfInterest.includes(a) ?? false;
+                                return (
+                                    <button
+                                        key={a}
+                                        type="button"
+                                        aria-pressed={selected}
+                                        disabled={isLoading || busy === "area"}
+                                        onClick={() => {
+                                            const current = career?.areasOfInterest ?? [];
+                                            const next = selected ? current.filter((x) => x !== a) : [...current, a];
+                                            run("area", () => updateCareer({ areasOfInterest: next }));
+                                        }}
+                                        className={cn(
+                                            "inline-flex cursor-pointer items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold text-ink transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                                            selected
+                                                ? "border-brand bg-brand/10"
+                                                : "border-border bg-white hover:border-brand/50"
+                                        )}
+                                    >
+                                        {selected && <Check className="size-3.5 text-brand" />}
+                                        {a}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     <div className="flex flex-col gap-2">

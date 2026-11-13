@@ -22,10 +22,10 @@ export async function PUT(req: Request) {
   if (error) return error;
 
   try {
-    const { areaOfInterest, resumeVisible, linkedinUrl, portfolioUrl } = await req.json();
+    const { areasOfInterest, resumeVisible, linkedinUrl, portfolioUrl } = await req.json();
 
     const res = await updateCareerProfile(session.user.id, {
-      areaOfInterest: areaOfInterest === undefined ? undefined : (areaOfInterest || null),
+      areasOfInterest: Array.isArray(areasOfInterest) ? areasOfInterest : undefined,
       resumeVisible: typeof resumeVisible === "boolean" ? resumeVisible : undefined,
       linkedinUrl: typeof linkedinUrl === "string" || linkedinUrl === null ? linkedinUrl : undefined,
       portfolioUrl: typeof portfolioUrl === "string" || portfolioUrl === null ? portfolioUrl : undefined,

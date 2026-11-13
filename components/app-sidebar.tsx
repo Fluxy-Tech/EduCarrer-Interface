@@ -18,6 +18,7 @@ import {
 import { getRoleLabel } from "@/lib/users/roles"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useCredits } from "@/app/services/credits.swr"
+import { useCareer } from "@/app/services/career.swr"
 import { formatCredits } from "@/lib/credits/config"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -119,6 +120,9 @@ export function AppSidebar() {
   const isAdmin = role === "admin"
   const isRecruiter = role === "recruiter"
   const items = isRecruiter ? recruiterItems : menuItems
+  // Pontos de ranking só para candidatos (e admin); recrutador não participa do ranking
+  const showRankPoints = !!session?.user && !isRecruiter
+  const { career } = useCareer(showRankPoints)
   const adminActive = adminItems.some((a) => pathname === a.url || pathname.startsWith(`${a.url}/`)) || pathname === "/admin"
 
   // O grupo Admin abre sozinho quando o usuário está em uma tela do admin
@@ -239,6 +243,21 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="relative p-3">
+        {showRankPoints && (
+          <Link
+            href="/profile"
+            className="group flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 mb-2 transition-colors hover:bg-white/[0.07]"
+          >
+            <div>
+              <p className="eyebrow text-gold">Pontos no ranking</p>
+              <p className="mt-0.5 text-xl font-extrabold text-white tabular-nums">
+                {career ? career.rankPoints.toLocaleString("pt-BR") : "—"}
+              </p>
+            </div>
+            <Trophy className="size-4 text-gold" />
+          </Link>
+        )}
+
         <Link
           href="/plans"
           className="group block rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-2 transition-colors hover:bg-white/[0.07]"

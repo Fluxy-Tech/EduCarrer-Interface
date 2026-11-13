@@ -10,11 +10,12 @@ export async function GET(req: Request) {
 
   try {
     const params = new URL(req.url).searchParams;
-    const area = params.get("area");
+    // ?area=Backend&area=Frontend: candidatos com ao menos uma dessas áreas de interesse
+    const areas = [...new Set(params.getAll("area").filter(isAreaOfInterest))];
     const stack = (params.get("stack") ?? "").trim().slice(0, 60);
 
     const ranking = await getUsersRanking({
-      area: area && isAreaOfInterest(area) ? area : null,
+      areas,
       stack: stack || null,
       viewerId: session.user.id,
       viewerIsAdmin: session.user.role === "admin",

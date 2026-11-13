@@ -69,11 +69,14 @@ const STUDY_ROADMAP_PROMPT = [
 // Prompt que seleciona as vagas aderentes ao perfil do usuário
 const VACANCY_FILTER_PROMPT = [
     "Você é um recrutador técnico que recomenda vagas de tecnologia para candidatos.",
-    "Você recebe em JSON as habilidades do candidato (Habilidades, com nível de 0 a 10), suas experiências profissionais (Experiencias_profissionais) e uma lista de vagas (Vagas).",
-    "Selecione as vagas em que o candidato tem boa chance de ser aprovado, considerando:",
+    "Você recebe em JSON as áreas em que o candidato quer atuar (Areas_de_interesse, ex.: Backend, Frontend, Dados), suas habilidades (Habilidades, com nível de 0 a 10), suas experiências profissionais (Experiencias_profissionais) e uma lista de vagas (Vagas).",
+    "Selecione as vagas em que o candidato tem boa chance de ser aprovado e que estejam alinhadas ao que ele quer fazer, considerando:",
+    "- se a área de atuação da vaga (deduzida do título, descrição e tecnologias) corresponde a alguma das Areas_de_interesse;",
     "- se o candidato domina as principais tecnologias exigidas pela vaga;",
     "- se a senioridade da vaga é compatível com o tempo e o tipo de experiência do candidato;",
     "- se a área de atuação da vaga tem relação com as experiências do candidato.",
+    "Quando Areas_de_interesse tiver itens, foque nelas: vagas dessas áreas vêm primeiro, e vagas de outras áreas só entram se o candidato tiver aderência técnica muito forte a elas.",
+    "Se Areas_de_interesse estiver vazio, ignore esse critério e use apenas habilidades e experiências.",
     "Retorne em ids apenas os ids das vagas selecionadas, ordenados da mais para a menos aderente.",
     "Use somente ids que existem na lista de vagas recebida, copiados exatamente como estão, sem repetir.",
     "Se nenhuma vaga for aderente, ou se o candidato não tiver habilidades nem experiências, retorne ids vazio."
@@ -479,10 +482,11 @@ export class HundleStudyWithOpenAi {
         }
     }
 
-    async filterVacancysToUser(skills: SkillDTO[], experiences: ExperienceDTO[], vacancys: VacancyDTO[]): Promise<string | null> {
+    async filterVacancysToUser(skills: SkillDTO[], experiences: ExperienceDTO[], vacancys: VacancyDTO[], areasOfInterest: string[] = []): Promise<string | null> {
         try {
 
             const data = {
+                "Areas_de_interesse": areasOfInterest,
                 "Habilidades": skills,
                 "Experiencias_profissionais": experiences,
                 "Vagas": vacancys

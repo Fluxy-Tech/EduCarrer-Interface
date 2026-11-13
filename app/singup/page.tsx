@@ -3,7 +3,15 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { z } from "zod"
-import { ArrowLeft, ArrowRight } from "lucide-react"
+import { ArrowLeft, ArrowRight, Briefcase, GraduationCap } from "lucide-react"
+import { getHomeForRole } from "@/lib/users/roles"
+
+type AccountType = "user" | "recruiter"
+
+const ACCOUNT_TYPES: { id: AccountType; label: string; description: string; icon: typeof Briefcase }[] = [
+  { id: "user", label: "Candidato", description: "Quero estudar e me preparar para vagas", icon: GraduationCap },
+  { id: "recruiter", label: "Recrutador", description: "Quero encontrar candidatos e publicar vagas", icon: Briefcase },
+]
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,6 +51,7 @@ const step2Schema = z
   })
 
 export default function SignUpPage() {
+  const [accountType, setAccountType] = useState<AccountType>("user")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -89,12 +98,14 @@ export default function SignUpPage() {
         email,
         password,
         name,
-      })
+        // Lido no hook de criação do usuário (lib/auth/auth.ts) para definir o perfil
+        accountType,
+      } as Parameters<typeof authClient.signUp.email>[0])
 
       if (signUpResult.error) {
         setError(signUpResult.error.message || "Erro ao criar conta")
       } else {
-        router.push("/jobs")
+        router.push(getHomeForRole(accountType))
       }
     } catch (err) {
       setError("Erro ao criar conta. Tente novamente.")
@@ -121,6 +132,35 @@ export default function SignUpPage() {
 
         {step == 1 && (
           <>
+            <div className="space-y-2">
+              <Label className="text-ink font-semibold">Como você vai usar a plataforma?</Label>
+              <div role="radiogroup" className="grid grid-cols-2 gap-3">
+                {ACCOUNT_TYPES.map(({ id, label, description, icon: Icon }) => {
+                  const selected = accountType === id
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setAccountType(id)}
+                      disabled={isLoading}
+                      className={cn(
+                        "flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-colors",
+                        selected
+                          ? "border-brand bg-brand/10 ring-1 ring-brand"
+                          : "border-border hover:border-brand/50 hover:bg-muted/50"
+                      )}
+                    >
+                      <Icon className={cn("size-5", selected ? "text-brand" : "text-muted-foreground")} />
+                      <span className="text-sm font-semibold text-ink">{label}</span>
+                      <span className="text-xs text-muted-foreground leading-snug">{description}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="name" className="text-ink font-semibold">
                 Nome completo

@@ -110,7 +110,7 @@ export default function AdminUsersPage() {
                       Desde {format(new Date(u.createdAt), "dd/MM/yyyy")}
                       {u.role === "recruiter"
                         ? ` · ${u._count.createdVacancies} vaga(s) cadastrada(s)`
-                        : ` · ${u._count.study} estudo(s)${u.areaOfInterest ? ` · ${u.areaOfInterest}` : ""}`}
+                        : ` · ${u._count.study} estudo(s)${u.areasOfInterest.length ? ` · ${u.areasOfInterest.join(", ")}` : ""}`}
                     </p>
                   </div>
 

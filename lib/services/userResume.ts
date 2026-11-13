@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { deleteObject, getObjectBytes, putObject, resumeKeyFor } from "@/lib/storage/s3";
-import { isAreaOfInterest } from "@/lib/users/roles";
+import { AREAS_OF_INTEREST, isAreaOfInterest } from "@/lib/users/roles";
+import { getUserRankPoints } from "@/lib/services/ranking";
 
 export const USER_RESUME_MAX_SIZE = 5 * 1024 * 1024;
 
@@ -26,11 +27,12 @@ function safeFileName(name: string) {
 export async function getCareerProfile(userId: string) {
     const user = await prisma.user.findUniqueOrThrow({
         where: { id: userId },
-        select: { areaOfInterest: true, linkedinUrl: true, portfolioUrl: true, resumeKey: true, resumeFileName: true, resumeVisible: true, resumeUploadedAt: true },
+        select: { id: true, areasOfInterest: true, linkedinUrl: true, portfolioUrl: true, resumeKey: true, resumeFileName: true, resumeVisible: true, resumeUploadedAt: true },
     });
 
     return {
-        areaOfInterest: user.areaOfInterest,
+        rankPoints: await getUserRankPoints(user),
+        areasOfInterest: user.areasOfInterest,
         linkedinUrl: user.linkedinUrl,
         portfolioUrl: user.portfolioUrl,
         resume: user.resumeKey
@@ -84,9 +86,9 @@ function normalizeUrl(value: string | null, onlyLinkedin = false): { ok: true; u
 
 export async function updateCareerProfile(
     userId: string,
-    data: { areaOfInterest?: string | null; resumeVisible?: boolean; linkedinUrl?: string | null; portfolioUrl?: string | null }
+    data: { areasOfInterest?: string[]; resumeVisible?: boolean; linkedinUrl?: string | null; portfolioUrl?: string | null }
 ) {
-    const update: { areaOfInterest?: string | null; resumeVisible?: boolean; linkedinUrl?: string | null; portfolioUrl?: string | null } = {};
+    const update: { areasOfInterest?: string[]; resumeVisible?: boolean; linkedinUrl?: string | null; portfolioUrl?: string | null } = {};
 
     if (data.linkedinUrl !== undefined) {
         const linkedin = normalizeUrl(data.linkedinUrl, true);
@@ -100,11 +102,12 @@ export async function updateCareerProfile(
         update.portfolioUrl = portfolio.url;
     }
 
-    if (data.areaOfInterest !== undefined) {
-        if (data.areaOfInterest !== null && !isAreaOfInterest(data.areaOfInterest)) {
+    if (data.areasOfInterest !== undefined) {
+        if (!data.areasOfInterest.every(isAreaOfInterest)) {
             return { status: false, message: "Área de interesse inválida" };
         }
-        update.areaOfInterest = data.areaOfInterest;
+        // Sem repetidas e na mesma ordem da lista oficial
+        update.areasOfInterest = AREAS_OF_INTEREST.filter((a) => data.areasOfInterest!.includes(a));
     }
 
     if (data.resumeVisible !== undefined) {

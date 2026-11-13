@@ -19,7 +19,7 @@ export async function listUsersAdmin(search: string, role: string | null) {
             name: true,
             email: true,
             role: true,
-            areaOfInterest: true,
+            areasOfInterest: true,
             createdAt: true,
             _count: { select: { study: true, createdVacancies: true } },
         },
