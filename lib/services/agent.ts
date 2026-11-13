@@ -2,7 +2,7 @@ import { HistoryRepository } from "@/lib/repositories/history";
 import { HundleAgentWithOpenAi } from "@/lib/services/hundleAgentWithOpenAi";
 import { getStudyById } from "@/lib/services/study";
 import { HistoryDTO } from "@/lib/interfaces/history.interface";
-import { refundCredits, spendCredits } from "@/lib/services/credits";
+import { getCreditsSnapshot, refundCredits, spendCredits } from "@/lib/services/credits";
 
 const historyRepository = new HistoryRepository();
 const hundleAgentWithOpenAi = new HundleAgentWithOpenAi();
@@ -96,14 +96,19 @@ export async function sendMessageToAgent(userId: string, text: string, studyId: 
         text
     });
 
-    const lastMessages = await historyRepository.getLastMessages(history.id, AGENT_CONTEXT_MESSAGES);
+    // Saldo já com esta mensagem descontada, para o agente responder sobre créditos
+    const [lastMessages, credits] = await Promise.all([
+        historyRepository.getLastMessages(history.id, AGENT_CONTEXT_MESSAGES),
+        getCreditsSnapshot(userId)
+    ]);
 
     let answer: string | null | undefined = null;
 
     try {
         answer = await hundleAgentWithOpenAi.answer(
             lastMessages.map((m) => ({ role: m.isBot ? "assistant" : "user", content: m.text })),
-            context.study
+            context.study,
+            credits
         );
     } catch (e) {
         console.error(e);

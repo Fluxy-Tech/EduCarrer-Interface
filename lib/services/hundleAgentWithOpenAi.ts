@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { AgentConversationMessage } from "@/lib/interfaces/history.interface";
 import { QUIZ_MIN_CORRECT_TO_PASS, QUIZ_QUESTIONS_PER_LEVEL } from "@/lib/utils/studyLevels";
+import { UserCreditsSnapshot, buildCreditsKnowledge, buildUserCreditsContext } from "@/lib/credits/knowledge";
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -17,21 +18,34 @@ const PLATFORM_AGENT_PROMPT = [
     "- Estudos: a partir de uma vaga, o usuário gera um estudo personalizado com IA. O estudo tem um diagnóstico do perfil frente à vaga, os pontos fortes, as lacunas a desenvolver, um plano semanal de estudos e uma dica para a reta final.",
     `- Trilha gamificada: cada lacuna do estudo é um nível. Para liberar o próximo nível o usuário responde um desafio de ${QUIZ_QUESTIONS_PER_LEVEL} perguntas e precisa acertar pelo menos ${QUIZ_MIN_CORRECT_TO_PASS}. Cada acerto vale XP e o usuário sobe de título (Recruta, Aprendiz, Analista, Especialista, Estrategista e Mestre) conforme avança.`,
     "- Dentro de cada estudo existe um tutor de IA que tira dúvidas específicas daquele estudo.",
+    "- Planos: a tela Planos mostra o saldo de créditos, os planos mensais, a compra de créditos avulsos e o extrato.",
+    "",
+    buildCreditsKnowledge(),
     "",
     "Regras:",
-    "- Fale apenas sobre a plataforma, carreira, preparação para vagas e estudos em tecnologia. Se perguntarem outra coisa, explique educadamente que você só ajuda com esses assuntos.",
+    "- Fale apenas sobre a plataforma (incluindo planos, créditos e pagamentos), carreira, preparação para vagas e estudos em tecnologia. Se perguntarem outra coisa, explique educadamente que você só ajuda com esses assuntos.",
     "- Não invente funcionalidades que não estão descritas acima. Se não souber, diga que não tem essa informação.",
-    "- Quando fizer sentido, indique em qual tela o usuário encontra o recurso (Perfil, Vagas ou Estudos)."
+    "- Quando fizer sentido, indique em qual tela o usuário encontra o recurso (Perfil, Vagas, Estudos ou Planos)."
 ].join("\n");
 
+function buildPlatformAgentPrompt(userCredits: string): string {
+    return userCredits ? `${PLATFORM_AGENT_PROMPT}\n\n${userCredits}` : PLATFORM_AGENT_PROMPT;
+}
+
 // Prompt do tutor do estudo: recebe o estudo completo como contexto
-function buildStudyAgentPrompt(study: any): string {
+function buildStudyAgentPrompt(study: any, userCredits: string): string {
     return [
         "Você é o tutor de IA da EduCarrer AI para um estudo específico do usuário. O estudo foi gerado para preparar o usuário para uma vaga de tecnologia.",
         "Responda sempre em português do Brasil, de forma didática, com exemplos práticos quando ajudar, e com respostas objetivas.",
         "Use o estudo abaixo como contexto principal: explique os tópicos das lacunas, tire dúvidas técnicas, sugira como estudar, ajude a montar a rotina do plano semanal e a se preparar para a entrevista da vaga.",
         `Cada lacuna é um nível com um desafio de ${QUIZ_QUESTIONS_PER_LEVEL} perguntas, e é preciso acertar ${QUIZ_MIN_CORRECT_TO_PASS} para liberar o próximo nível. Ajude o usuário a aprender o conteúdo, mas nunca entregue respostas prontas do desafio.`,
-        "Se a pergunta não tiver relação com o estudo, com a vaga ou com carreira em tecnologia, diga educadamente que só pode ajudar com esse estudo.",
+        "Se a pergunta não tiver relação com o estudo, com a vaga, com carreira em tecnologia ou com os créditos da plataforma, diga educadamente que só pode ajudar com esse estudo.",
+        "Perguntas sobre créditos, planos e pagamentos podem ser respondidas com as informações abaixo, de forma breve, e depois retome o estudo.",
+        "Estudar os níveis e responder os desafios não consome créditos; só as mensagens para você, a geração de estudos e a atualização antecipada de vagas consomem.",
+        "",
+        buildCreditsKnowledge(),
+        "",
+        userCredits,
         "",
         "Estudo do usuário (JSON):",
         JSON.stringify(study)
@@ -39,11 +53,13 @@ function buildStudyAgentPrompt(study: any): string {
 }
 
 export class HundleAgentWithOpenAi {
-    async answer(conversation: AgentConversationMessage[], study?: any): Promise<string | null> {
+    async answer(conversation: AgentConversationMessage[], study?: any, credits?: UserCreditsSnapshot | null): Promise<string | null> {
         try {
+            const userCredits = buildUserCreditsContext(credits);
+
             const response = await openai.responses.create({
                 model: process.env.OPENAI_AGENT_MODEL ?? "gpt-4.1-mini",
-                instructions: study ? buildStudyAgentPrompt(study) : PLATFORM_AGENT_PROMPT,
+                instructions: study ? buildStudyAgentPrompt(study, userCredits) : buildPlatformAgentPrompt(userCredits),
                 input: conversation,
                 max_output_tokens: 1024,
                 store: false

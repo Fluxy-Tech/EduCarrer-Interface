@@ -6,9 +6,12 @@ import {
     CREDIT_COSTS,
     CreditAction,
     INSUFFICIENT_CREDITS_CODE,
+    VACANCY_FREE_REFRESH_DAYS,
     formatCredits,
     getPlan,
 } from "@/lib/credits/config";
+import { UserCreditsSnapshot } from "@/lib/credits/knowledge";
+import { addDays } from "date-fns";
 
 type Tx = Prisma.TransactionClient;
 
@@ -91,6 +94,46 @@ export async function getCreditsSummary(userId: string) {
         pendingPayments,
         costs: CREDIT_COSTS,
     };
+}
+
+// Resumo enxuto do saldo para os agentes de IA responderem perguntas sobre os créditos do usuário
+export async function getCreditsSnapshot(userId: string): Promise<UserCreditsSnapshot | null> {
+    try {
+        const [user, subscription, vacancyFilter] = await Promise.all([
+            prisma.user.findUnique({
+                where: { id: userId },
+                select: { plan: true, planCredits: true, planExpiresAt: true, extraCredits: true },
+            }),
+            prisma.subscription.findFirst({
+                where: { userId, status: { in: ["PENDING", "ACTIVE", "OVERDUE"] } },
+                orderBy: { createdAt: "desc" },
+                select: { plan: true, status: true },
+            }),
+            prisma.vacancyFilter.findUnique({
+                where: { userId },
+                select: { filteredAt: true },
+            }),
+        ]);
+
+        if (!user) return null;
+
+        const planCredits = getEffectivePlanCredits(user);
+        const extraCredits = Math.max(user.extraCredits, 0);
+
+        return {
+            total: planCredits + extraCredits,
+            planCredits,
+            extraCredits,
+            plan: user.plan,
+            planExpiresAt: user.planExpiresAt,
+            subscriptionStatus: subscription?.status ?? null,
+            subscriptionPlan: subscription?.plan ?? null,
+            nextFreeVacancyRefreshAt: vacancyFilter ? addDays(vacancyFilter.filteredAt, VACANCY_FREE_REFRESH_DAYS) : null,
+        };
+    } catch (e) {
+        console.error("Erro ao coletar o saldo para o agente:", e);
+        return null;
+    }
 }
 
 // Debita os créditos de uma ação: primeiro os do plano (que expiram), depois os avulsos
