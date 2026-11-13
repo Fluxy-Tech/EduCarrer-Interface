@@ -94,7 +94,7 @@ export default function AdminMetricsPage() {
             <h2 className="mt-2 font-display text-3xl sm:text-4xl">Do cadastro à conclusão</h2>
           </div>
           <p className="max-w-sm text-xs text-white/50 sm:text-right">
-            Cada etapa mostra o percentual sobre o total de usuários e a conversão em relação à etapa anterior. Administradores não entram na contagem.
+            Cada etapa mostra o percentual sobre o total de usuários e a conversão em relação à etapa anterior.
           </p>
         </div>
 

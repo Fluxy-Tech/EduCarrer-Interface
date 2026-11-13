@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { GAPS_SECTION_TYPE } from "@/lib/utils/studyLevels";
 
-// Métricas de evolução dos estudos para o painel administrativo.
-// Administradores ficam fora das contagens para não distorcer os números com testes internos.
+// Métricas de evolução dos estudos para o painel administrativo. Todos os usuários entram, inclusive administradores.
 
 const TZ = "America/Sao_Paulo";
 
@@ -78,7 +77,7 @@ export async function getStudyEvolutionMetrics(months = 6): Promise<StudyEvoluti
     const since = new Date(`${range[0]}-01T00:00:00-03:00`);
 
     const [totalUsers, studies, usersByMonth, studiesByMonth, levelsByMonth] = await Promise.all([
-        prisma.user.count({ where: { role: { not: "admin" } } }),
+        prisma.user.count(),
 
         // Progresso de cada estudo: níveis são as lacunas da seção de trilha
         prisma.$queryRaw<StudyProgressRow[]>`
@@ -88,23 +87,21 @@ export async function getStudyEvolutionMetrics(months = 6): Promise<StudyEvoluti
                    COUNT(g."id") FILTER (WHERE g."completed")::int AS "completedLevels",
                    MAX(g."completedAt") AS "lastCompletedAt"
             FROM "Study" s
-            JOIN "User" u ON u."id" = s."userId" AND u."role" <> 'admin'
             LEFT JOIN "StudySection" sec ON sec."studyId" = s."id" AND sec."type" = ${GAPS_SECTION_TYPE}
             LEFT JOIN "StudyGap" g ON g."sectionId" = sec."id"
             GROUP BY s."id", s."userId"
         `,
 
         prisma.$queryRaw<MonthCountRow[]>`
-            SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${TZ}, 'YYYY-MM') AS "month", COUNT(*)::int AS "count"
-            FROM "User"
-            WHERE "role" <> 'admin' AND "createdAt" >= ${since}
+            SELECT to_char((u."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${TZ}, 'YYYY-MM') AS "month", COUNT(*)::int AS "count"
+            FROM "User" u
+            WHERE u."createdAt" >= ${since}
             GROUP BY 1
         `,
 
         prisma.$queryRaw<MonthCountRow[]>`
             SELECT to_char((s."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${TZ}, 'YYYY-MM') AS "month", COUNT(*)::int AS "count"
             FROM "Study" s
-            JOIN "User" u ON u."id" = s."userId" AND u."role" <> 'admin'
             WHERE s."createdAt" >= ${since}
             GROUP BY 1
         `,
@@ -112,9 +109,6 @@ export async function getStudyEvolutionMetrics(months = 6): Promise<StudyEvoluti
         prisma.$queryRaw<MonthCountRow[]>`
             SELECT to_char((g."completedAt" AT TIME ZONE 'UTC') AT TIME ZONE ${TZ}, 'YYYY-MM') AS "month", COUNT(*)::int AS "count"
             FROM "StudyGap" g
-            JOIN "StudySection" sec ON sec."id" = g."sectionId"
-            JOIN "Study" s ON s."id" = sec."studyId"
-            JOIN "User" u ON u."id" = s."userId" AND u."role" <> 'admin'
             WHERE g."completed" AND g."completedAt" >= ${since}
             GROUP BY 1
         `,
