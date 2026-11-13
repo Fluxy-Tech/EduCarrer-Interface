@@ -29,4 +29,6 @@ export interface CreateVacancyData {
     location: string;
     salary: string | null;
     active: boolean;
+    // Recrutador que cadastrou a vaga (vazio quando foi o admin)
+    createdById?: string | null;
 }

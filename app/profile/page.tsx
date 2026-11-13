@@ -14,6 +14,7 @@ import CadsSkill from "@/components/cards/card-skill";
 import CadsExperience from "@/components/cards/card-experience";
 import { ProgressRing } from "@/components/study/level-progress";
 import { AgentChat } from "@/components/agent/agent-chat";
+import { CareerCard } from "@/components/profile/career-card";
 
 function SectionHeader({ icon: Icon, eyebrow, title, description, action }: {
   icon: React.ElementType
@@ -100,6 +101,8 @@ export default function DashboardPage() {
           <DialogResumeImport />
         </div>
       </section>
+
+      <CareerCard />
 
       <section className="surface overflow-hidden">
         <SectionHeader

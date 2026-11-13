@@ -9,6 +9,7 @@ import CharRecomedacaoDeVagas from "@/components/chart/acuracia-recomendacoes";
 import CharGeracaoDeEstudo from "@/components/chart/acuracia-geracao-de-estudos";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { RecruiterVacanciesAdmin } from "@/components/vacancy/recruiter-vacancies-admin";
 import { Button } from "@/components/ui/button";
 import { useMetricsAdmin } from "@/app/services/metrics.swr";
 
@@ -94,6 +95,8 @@ export default function DashboardPage() {
               <Link href="/admin/vagas/create"><Plus size={16} /> Adicionar vaga</Link>
             </Button>
           </div>
+
+          <RecruiterVacanciesAdmin />
 
           {/* Filtros */}
           <div className="surface p-3 flex flex-col gap-3 lg:flex-row">

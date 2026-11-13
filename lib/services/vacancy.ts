@@ -12,6 +12,7 @@ import { refundCredits, spendCredits } from "@/lib/services/credits";
 import { VACANCY_FREE_REFRESH_DAYS } from "@/lib/credits/config";
 import { checkIfTheDateTimeHasPassedACertainNumberOfDays } from "@/lib/utils/checkIfTheDateTimeHasPassedACertainNumberOfDays";
 import { addDays } from "date-fns";
+import { prisma } from "@/lib/prisma";
 
 
 const vacancysRedis = new getVacancysFromRedis();
@@ -130,6 +131,58 @@ export async function createVacancy(data: CreateVacancyData) {
 export async function updateVacancy(id: string, data: CreateVacancyData) {
     await clearVacancysCache();
     return await vacancysRepositoryDataBase.updateVacancy(id, data);
+}
+
+const recruiterVacancySelect = {
+    id: true,
+    title: true,
+    company: true,
+    level: true,
+    modality: true,
+    location: true,
+    technologies: true,
+    active: true,
+    createdAt: true,
+    _count: { select: { study: true } },
+} as const;
+
+// Vagas cadastradas por um recrutador (tela "Minhas vagas")
+export async function getVacanciesByRecruiter(recruiterId: string) {
+    return await prisma.vacancy.findMany({
+        where: { createdById: recruiterId },
+        orderBy: { createdAt: "desc" },
+        select: recruiterVacancySelect,
+    });
+}
+
+// Todas as vagas cadastradas por recrutadores, para o admin acompanhar e excluir
+export async function getRecruiterVacanciesAdmin() {
+    return await prisma.vacancy.findMany({
+        where: { createdById: { not: null } },
+        orderBy: { createdAt: "desc" },
+        select: { ...recruiterVacancySelect, createdBy: { select: { id: true, name: true, email: true } } },
+    });
+}
+
+export async function createRecruiterVacancy(recruiterId: string, data: CreateVacancyData) {
+    return await createVacancy({ ...data, createdById: recruiterId });
+}
+
+// Exclusão pelo admin. Os estudos gerados para a vaga são removidos junto (cascade)
+export async function deleteVacancy(id: string) {
+    const vacancy = await prisma.vacancy.findUnique({ where: { id }, select: { id: true, _count: { select: { study: true } } } });
+
+    if (!vacancy) return { status: false, message: "Vaga não encontrada" };
+
+    await prisma.vacancy.delete({ where: { id } });
+    await clearVacancysCache();
+
+    return {
+        status: true,
+        message: vacancy._count.study > 0
+            ? `Vaga excluída junto com ${vacancy._count.study} estudo(s) gerado(s) para ela`
+            : "Vaga excluída",
+    };
 }
 
 export async function getVacancysFromRedisAdmin() {

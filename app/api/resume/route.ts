@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { analyzeResume } from "@/lib/services/resume";
+import { uploadUserResume } from "@/lib/services/userResume";
 
 // Recebe o PDF do currículo e devolve as experiências e habilidades encontradas para o usuário revisar
 export async function POST(req: Request) {
@@ -27,6 +28,17 @@ export async function POST(req: Request) {
     }
 
     const res = await analyzeResume(session.user.id, file);
+
+    // Se o usuário marcou a opção, o mesmo PDF fica salvo no bucket e visível para recrutadores
+    if (res.status && formData.get("shareWithRecruiters") === "true") {
+      try {
+        const saved = await uploadUserResume(session.user.id, file, true);
+        return NextResponse.json({ ...res, resumeSaved: saved.status }, { status: 200 });
+      } catch (e) {
+        console.error("Erro ao salvar o currículo no bucket:", e);
+        return NextResponse.json({ ...res, resumeSaved: false }, { status: 200 });
+      }
+    }
 
     return NextResponse.json(res, { status: res.status ? 200 : 400 });
   } catch (e: any) {

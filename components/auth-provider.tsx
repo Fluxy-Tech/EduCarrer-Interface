@@ -4,18 +4,29 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "@/lib/auth/auth-client"
 import { BrandMark } from "@/components/brand-mark"
+import { UserRole, getHomeForRole } from "@/lib/users/roles"
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+// Telas de usuário por padrão; recrutadores só acessam as telas próprias (ranking e vagas)
+const DEFAULT_ROLES: UserRole[] = ["user", "admin"]
+
+export function AuthProvider({ children, allowedRoles = DEFAULT_ROLES }: { children: React.ReactNode; allowedRoles?: UserRole[] }) {
   const { data: session, isPending } = useSession()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!isPending && !session) {
-      router.push("/singin")
-    }
-  }, [session, isPending, router])
+  const role = (session?.user?.role ?? "user") as UserRole
+  const allowed = !!session && allowedRoles.includes(role)
 
-  if (isPending) {
+  useEffect(() => {
+    if (isPending) return
+
+    if (!session) {
+      router.push("/singin")
+    } else if (!allowedRoles.includes(role)) {
+      router.replace(getHomeForRole(role))
+    }
+  }, [session, isPending, router, role, allowedRoles])
+
+  if (isPending || (session && !allowed)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-ink-gradient">
         <div className="flex flex-col items-center gap-6 animate-pop">

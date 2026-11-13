@@ -92,10 +92,12 @@ interface VacancyFormProps {
     submitLabel: string;
     submittingLabel: string;
     onSubmit: (data: VacancyFormData) => Promise<void>;
+    // Para onde o botão Cancelar leva (admin ou recrutador)
+    backHref?: string;
 }
 
 // Formulário de vaga usado nas telas de criação e de edição do admin
-export function VacancyForm({ defaultValues, submitLabel, submittingLabel, onSubmit }: VacancyFormProps) {
+export function VacancyForm({ defaultValues, submitLabel, submittingLabel, onSubmit, backHref = "/admin/vagas" }: VacancyFormProps) {
     const [techSearch, setTechSearch] = useState("");
 
     const {
@@ -300,7 +302,7 @@ export function VacancyForm({ defaultValues, submitLabel, submittingLabel, onSub
                 <div className="mx-auto flex max-w-[1400px] items-center justify-end gap-3 px-4 py-3 sm:px-6 lg:px-10">
                     {isDirty && <span className="mr-auto hidden text-xs text-muted-foreground sm:inline">Alterações não salvas</span>}
                     <Button asChild variant="close" type="button">
-                        <Link href="/admin/vagas">Cancelar</Link>
+                        <Link href={backHref}>Cancelar</Link>
                     </Button>
                     <Button type="submit" variant="create" disabled={isSubmitting}>
                         {isSubmitting ? <Loader2 className="animate-spin" /> : <Save />}

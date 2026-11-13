@@ -12,7 +12,10 @@ import {
   Crown,
   ChevronDown,
   ChartNoAxesCombined,
+  Trophy,
+  Users,
 } from "lucide-react"
+import { getRoleLabel } from "@/lib/users/roles"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useCredits } from "@/app/services/credits.swr"
 import { formatCredits } from "@/lib/credits/config"
@@ -72,9 +75,27 @@ const menuItems = [
   },
 ]
 
+// Recrutador vê somente o ranking de candidatos e as vagas que cadastrou
+const recruiterItems = [
+  {
+    title: "Ranking",
+    description: "Candidatos com mais desempenho",
+    url: "/recruiter/ranking",
+    icon: Trophy,
+  },
+  {
+    title: "Minhas vagas",
+    description: "Cadastre vagas da empresa",
+    url: "/recruiter/vagas",
+    icon: BriefcaseBusiness,
+  },
+]
+
 const adminItems = [
   { title: "Vagas", url: "/admin/vagas", icon: BriefcaseBusiness },
   { title: "Métricas", url: "/admin/metricas", icon: ChartNoAxesCombined },
+  { title: "Usuários", url: "/admin/usuarios", icon: Users },
+  { title: "Ranking", url: "/recruiter/ranking", icon: Trophy },
 ]
 
 export function AppSidebar() {
@@ -88,9 +109,11 @@ export function AppSidebar() {
     router.push("/singin")
   }
 
-  const items = menuItems
-  const isAdmin = session?.user?.role === "admin"
-  const adminActive = pathname === "/admin" || pathname.startsWith("/admin/")
+  const role = session?.user?.role ?? "user"
+  const isAdmin = role === "admin"
+  const isRecruiter = role === "recruiter"
+  const items = isRecruiter ? recruiterItems : menuItems
+  const adminActive = adminItems.some((a) => pathname === a.url || pathname.startsWith(`${a.url}/`)) || pathname === "/admin"
 
   // O grupo Admin abre sozinho quando o usuário está em uma tela do admin
   const [adminOpen, setAdminOpen] = React.useState(adminActive)
@@ -210,6 +233,14 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="relative p-3">
+        {isRecruiter ? (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-2">
+            <p className="eyebrow text-gold mb-1">Perfil recrutador</p>
+            <p className="text-xs leading-relaxed text-white/60">
+              Encontre candidatos pelo desempenho nas trilhas e baixe os currículos que eles autorizaram.
+            </p>
+          </div>
+        ) : (
         <Link
           href="/plans"
           className="group block rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-2 transition-colors hover:bg-white/[0.07]"
@@ -226,6 +257,7 @@ export function AppSidebar() {
             <span className="ml-1 text-gold group-hover:underline">· {credits && credits.total < 2000 ? "Recarregar" : "Ver planos"}</span>
           </p>
         </Link>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -238,7 +270,7 @@ export function AppSidebar() {
                   {session?.user?.name || "Usuário"}
                 </span>
                 <span className="truncate text-xs text-white/45">
-                  {session?.user?.email}
+                  {role !== "user" ? `${getRoleLabel(role)} · ` : ""}{session?.user?.email}
                 </span>
               </span>
               <ChevronsUpDown className="ml-auto size-4 shrink-0 text-white/40" />

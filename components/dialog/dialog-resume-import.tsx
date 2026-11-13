@@ -35,6 +35,7 @@ import {
   confirmResume,
 } from "@/app/services/resume.swr"
 import { cn } from "@/lib/utils"
+import { refreshCareer } from "@/app/services/career.swr"
 
 type Step = "upload" | "analyzing" | "review" | "saving" | "declined"
 
@@ -76,6 +77,8 @@ export function DialogResumeImport() {
   const [error, setError] = useState("")
   const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  // Também guarda o PDF no perfil, visível para recrutadores
+  const [shareWithRecruiters, setShareWithRecruiters] = useState(false)
 
   const { refresh: refreshSkills } = useSkills()
   const { refresh: refreshExperiences } = useExperiences()
@@ -85,6 +88,7 @@ export function DialogResumeImport() {
     setFile(null)
     setError("")
     setAnalysis(null)
+    setShareWithRecruiters(false)
     if (inputRef.current) inputRef.current.value = ""
   }
 
@@ -118,7 +122,7 @@ export function DialogResumeImport() {
     try {
       setStep("analyzing")
       setError("")
-      const res = await analyzeResume(file)
+      const res = await analyzeResume(file, shareWithRecruiters)
 
       if (!res.status || !res.analysis) {
         setError(res.message || "Não conseguimos ler o currículo.")
@@ -128,6 +132,13 @@ export function DialogResumeImport() {
 
       setAnalysis(res.analysis)
       setStep("review")
+
+      if (shareWithRecruiters) {
+        await refreshCareer()
+        ToastPersonalizado({
+          mensagem: res.resumeSaved ? "Currículo salvo no perfil e visível para recrutadores." : "Lemos o currículo, mas não conseguimos salvá-lo para recrutadores. Anexe pelo perfil.",
+        })
+      }
     } catch (e) {
       console.error(e)
       setError("Não conseguimos ler o currículo agora. Tente novamente em instantes.")
@@ -241,6 +252,21 @@ export function DialogResumeImport() {
                 className="hidden"
                 onChange={(e) => pickFile(e.target.files?.[0])}
               />
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-white p-4">
+                <input
+                  type="checkbox"
+                  checked={shareWithRecruiters}
+                  onChange={(e) => setShareWithRecruiters(e.target.checked)}
+                  className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]"
+                />
+                <span>
+                  <span className="block text-sm font-bold text-ink">Deixar meu currículo visível para recrutadores</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Guardamos este PDF no seu perfil e recrutadores poderão baixá-lo no ranking. Você pode ocultar ou remover quando quiser.
+                  </span>
+                </span>
+              </label>
 
               {error && (
                 <div className="flex items-start gap-3 rounded-xl border border-danger/20 bg-danger-soft p-4 text-sm text-danger">

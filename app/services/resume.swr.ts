@@ -30,6 +30,8 @@ export interface ResultAnalyzeResume {
     status: boolean
     message: string
     analysis: ResumeAnalysis | null
+    // Presente quando o usuário pediu para guardar o PDF para recrutadores
+    resumeSaved?: boolean
 }
 
 export interface ResultConfirmResume {
@@ -42,9 +44,10 @@ export interface ResultConfirmResume {
 const URL = process.env.NEXT_PUBLIC_AMBIENTE == "dev" ? "http://localhost:8051" : "https://educarrer.fluxytechnologies.com.br"
 
 // validateStatus mantém a mensagem do back nos erros 400 (arquivo inválido, não é currículo)
-export async function analyzeResume(file: File): Promise<ResultAnalyzeResume> {
+export async function analyzeResume(file: File, shareWithRecruiters = false): Promise<ResultAnalyzeResume> {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("shareWithRecruiters", String(shareWithRecruiters));
 
     const { data } = await axios.post(`${URL}/api/resume`, formData, {
         withCredentials: true,

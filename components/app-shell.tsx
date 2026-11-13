@@ -4,18 +4,21 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { AuthProvider } from "@/components/auth-provider"
 import { CreditsProvider } from "@/components/credits/credits-provider"
+import { UserRole } from "@/lib/users/roles"
 
 interface AppShellProps {
   eyebrow: string
   title: string
   description: string
   children: React.ReactNode
+  // Perfis que podem abrir a tela (padrão: usuário e admin)
+  allowedRoles?: UserRole[]
 }
 
 // Estrutura padrão das telas logadas: sidebar + cabeçalho fixo + conteúdo
-export function AppShell({ eyebrow, title, description, children }: AppShellProps) {
+export function AppShell({ eyebrow, title, description, children, allowedRoles }: AppShellProps) {
   return (
-    <AuthProvider>
+    <AuthProvider allowedRoles={allowedRoles}>
       <CreditsProvider>
       <SidebarProvider>
         <div className="flex min-h-screen w-full bg-sky">

@@ -29,6 +29,14 @@ model User {
   cpfCnpj         String?
   asaasCustomerId String?   @unique
 
+  // Área de interesse (Backend, Frontend...) usada no ranking dos recrutadores
+  areaOfInterest   String?
+  // Currículo no bucket; recrutadores só baixam quando resumeVisible = true
+  resumeKey        String?
+  resumeFileName   String?
+  resumeVisible    Boolean   @default(false)
+  resumeUploadedAt DateTime?
+
   accounts      Account[]
   sessions      Session[]
   skills        Skill[]
@@ -42,6 +50,7 @@ model User {
   payments      Payment[]
   creditTransactions CreditTransaction[]
   vacancyFilter VacancyFilter?
+  createdVacancies Vacancy[] @relation("VacancyCreatedBy")
 }
 
 model ResetPassWord {
@@ -246,6 +255,12 @@ model Vacancy {
   location      String?
   salary        String? @default("0")
   active        Boolean @default(true)
+
+  // Recrutador que cadastrou a vaga (null = cadastrada pelo admin)
+  createdById   String?
+  createdBy     User?    @relation("VacancyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([createdById])
 
   study         Study[]
 
