@@ -12,6 +12,8 @@ import {
   startNewAgentHistory,
 } from "@/app/services/agent.swr";
 import { cn } from "@/lib/utils";
+import { isInsufficientCredits } from "@/app/services/credits.swr";
+import { CREDIT_COSTS, formatCredits } from "@/lib/credits/config";
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -103,7 +105,12 @@ export function AgentChat({ studyId, eyebrow, title, description, suggestions = 
 
       setMessages((prev) => [...prev.filter((m) => m.id !== tempId), ...res.messages]);
 
-      if (!res.status) ToastPersonalizado({ mensagem: res.message });
+      if (!res.status) {
+        // Mensagem não processada: devolve o texto para o usuário reenviar depois
+        if (res.messages.length === 0) setText(message);
+        // Sem créditos o diálogo de compra já é aberto pelo CreditsProvider
+        if (!isInsufficientCredits(res)) ToastPersonalizado({ mensagem: res.message });
+      }
     } catch (error) {
       console.error(error);
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
@@ -218,7 +225,7 @@ export function AgentChat({ studyId, eyebrow, title, description, suggestions = 
           }}
           rows={1}
           maxLength={MAX_MESSAGE_LENGTH}
-          placeholder="Digite sua pergunta..."
+          placeholder={`Digite sua pergunta... (${formatCredits(CREDIT_COSTS.AGENT_MESSAGE)} créditos por mensagem)`}
           disabled={loading}
           className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-input bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted-foreground focus:border-brand/50"
         />

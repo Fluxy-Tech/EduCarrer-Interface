@@ -15,11 +15,13 @@ export async function GET(req: Request) {
       );
     }
 
-    const vacancys = await getVacancys(session.user.id);
+    const { vacancys, filteredAt, nextFreeRefreshAt } = await getVacancys(session.user.id);
 
     return NextResponse.json({
       status: vacancys.length > 0,
       vacancys,
+      filteredAt,
+      nextFreeRefreshAt,
       message: vacancys.length > 0  ? "Sucesso na consulta" : "Não encontramos uma vaga de acordo com seu perfil"
     });
   } catch (e: any) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { getStudyWithoutSessionByUserId, createStudy } from "@/lib/services/study";
+import { insufficientCreditsResponse } from "@/lib/services/credits";
 
 export async function GET(req: Request) {
   try {
@@ -51,6 +52,10 @@ export async function POST(req: Request) {
     const user = session.user;
 
     const studies = await createStudy(idVacancy, user.id);
+
+    if ("insufficient" in studies && studies.insufficient && !studies.insufficient.ok) {
+      return insufficientCreditsResponse(studies.insufficient);
+    }
 
     return NextResponse.json(
       studies,

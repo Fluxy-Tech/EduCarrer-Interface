@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { AGENT_MAX_MESSAGE_LENGTH, getCurrentHistory, sendMessageToAgent } from "@/lib/services/agent";
+import { insufficientCreditsResponse } from "@/lib/services/credits";
 
 // Sem studyId é o agente da plataforma (perfil), com studyId é o tutor do estudo
 export async function GET(req: Request) {
@@ -56,6 +57,10 @@ export async function POST(req: Request) {
     }
 
     const res = await sendMessageToAgent(session.user.id, message, studyId || null);
+
+    if ("insufficient" in res && res.insufficient && !res.insufficient.ok) {
+      return insufficientCreditsResponse(res.insufficient, { messages: [] });
+    }
 
     return NextResponse.json(res, { status: res.status ? 200 : 400 });
   } catch (e: any) {

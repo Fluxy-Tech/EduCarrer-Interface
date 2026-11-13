@@ -28,6 +28,39 @@ export class VacancyRepository {
         ));
     }
 
+    // Vagas ativas pelos ids, mantendo a ordem recebida (ordem de relevância definida pela IA)
+    async getActiveVacancysByIds(ids: string[]): Promise<Vacancy[]> {
+        if (ids.length === 0) return [];
+
+        const vacancys = await prisma.vacancy.findMany({
+            where: { id: { in: ids }, active: true }
+        });
+
+        const byId = new Map(vacancys.map((v) => [v.id, v]));
+
+        return ids
+            .map((id) => byId.get(id))
+            .filter((v): v is NonNullable<typeof v> => !!v)
+            .map(v => new Vacancy(
+                v.id,
+                v.title,
+                v.description,
+                v.company,
+                v.modality,
+                v.level,
+                v.technologies,
+                v.link,
+                v.origin,
+                v.location,
+                v.salary,
+                v.createdAt,
+                v.updatedAt,
+                v.active,
+                null,
+                null
+            ));
+    }
+
     async getVacancysById(id: string): Promise<Vacancy | null> {
         const vacancy = await prisma.vacancy.findFirst({
             where: { id }

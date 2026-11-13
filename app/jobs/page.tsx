@@ -8,6 +8,12 @@ import { DialogAvaliationsVacancys } from "@/components/dialog/dialog-avaliation
 import { getAvaliationVancancyByUserId } from "@/app/services/avaliationsVacancy.swr";
 import CadsVacancy from "@/components/cards/card-vacancy";
 import { useMetrics } from "@/app/services/metrics.swr";
+import { isInsufficientCredits, refreshVacancysPaid } from "@/app/services/credits.swr";
+import { CREDIT_COSTS, VACANCY_FREE_REFRESH_DAYS, formatCredits } from "@/lib/credits/config";
+import { ToastPersonalizado } from "@/components/toast";
+import { Button } from "@/components/ui/button";
+import { CalendarClock, RefreshCw } from "lucide-react";
+import { format } from "date-fns";
 
 import {
   Select,
@@ -35,7 +41,35 @@ export interface Vacancy {
 }
 
 export default function DashboardPage() {
-  const { vacancys, isLoading } = useVacancys();
+  const { vacancys, isLoading, nextFreeRefreshAt, refresh: refreshVacancysList } = useVacancys();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const freeRefreshAvailable = !nextFreeRefreshAt || new Date(nextFreeRefreshAt) <= new Date();
+
+  // Antes do prazo gratuito a atualização consome créditos (sem créditos, o diálogo de compra abre sozinho)
+  const handleRefreshVacancys = async () => {
+    try {
+      setRefreshing(true);
+
+      if (freeRefreshAvailable) {
+        await refreshVacancysList();
+        return;
+      }
+
+      const res = await refreshVacancysPaid();
+
+      if (isInsufficientCredits(res)) return;
+
+      ToastPersonalizado({ mensagem: res.message });
+
+      if (res.status) await refreshVacancysList();
+    } catch (error) {
+      console.error(error);
+      ToastPersonalizado({ mensagem: "Não conseguimos atualizar as vagas agora, tente novamente." });
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const { metrics } = useMetrics();
 
   const [nomeFiltro, setNomeFiltro] = useState("");
@@ -177,6 +211,23 @@ export default function DashboardPage() {
               </span>
             )}
           </div>
+
+          {!isLoading && (
+            <div className="surface flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarClock className="size-4 shrink-0 text-brand" />
+                {nextFreeRefreshAt && !freeRefreshAvailable
+                  ? `Próxima atualização gratuita em ${format(new Date(nextFreeRefreshAt), "dd/MM 'às' HH:mm")}.`
+                  : `Suas vagas são recalculadas grátis a cada ${VACANCY_FREE_REFRESH_DAYS} dias.`}
+              </p>
+              <Button variant="outline" size="sm" onClick={handleRefreshVacancys} disabled={refreshing}>
+                <RefreshCw className={refreshing ? "animate-spin" : ""} />
+                {freeRefreshAvailable
+                  ? "Atualizar vagas"
+                  : `Atualizar agora · ${formatCredits(CREDIT_COSTS.VACANCY_REFRESH)} créditos`}
+              </Button>
+            </div>
+          )}
 
           {/* Lista de vagas */}
           {isLoading ? (

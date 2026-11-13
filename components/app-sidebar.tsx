@@ -8,7 +8,11 @@ import {
   LogOut,
   ShieldUser,
   ChevronsUpDown,
+  Coins,
+  Crown,
 } from "lucide-react"
+import { useCredits } from "@/app/services/credits.swr"
+import { formatCredits } from "@/lib/credits/config"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 
@@ -54,12 +58,19 @@ const menuItems = [
     url: "/profile",
     icon: UserCog,
   },
+  {
+    title: "Planos",
+    description: "Créditos e assinatura",
+    url: "/plans",
+    icon: Crown,
+  },
 ]
 
 export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { data: session } = useSession()
+  const { credits } = useCredits()
 
   const handleLogout = async () => {
     await authClient.signOut()
@@ -136,12 +147,22 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="relative p-3">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-2">
-          <p className="eyebrow text-gold mb-1">Dica</p>
-          <p className="text-xs leading-relaxed text-white/60">
-            Complete os níveis dos seus estudos para acumular XP e subir de patente.
+        <Link
+          href="/plans"
+          className="group block rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-2 transition-colors hover:bg-white/[0.07]"
+        >
+          <div className="flex items-center justify-between">
+            <p className="eyebrow text-gold">Créditos de IA</p>
+            <Coins className="size-4 text-gold" />
+          </div>
+          <p className="mt-1 text-2xl font-extrabold text-white tabular-nums">
+            {credits ? formatCredits(credits.total) : "—"}
           </p>
-        </div>
+          <p className="text-[11px] text-white/45">
+            {credits?.planName ? `Plano ${credits.planName}` : "Sem plano ativo"}
+            <span className="ml-1 text-gold group-hover:underline">· {credits && credits.total < 2000 ? "Recarregar" : "Ver planos"}</span>
+          </p>
+        </Link>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

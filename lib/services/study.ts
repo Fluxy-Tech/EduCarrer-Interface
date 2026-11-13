@@ -6,6 +6,8 @@ import { getVacancysById } from "@/lib/services/vacancy";
 import { HundleStudyWithOpenAi } from "@/lib/services/hundleStudyWithOpenAi";
 import { StudyRedis } from "@/lib/redis/study";
 import { redis } from "@/lib/redis/conection";
+import { refundCredits, spendCredits } from "@/lib/services/credits";
+import { INSUFFICIENT_CREDITS_CODE } from "@/lib/credits/config";
 
 const studyRepository = new StudyRepository();
 const studyRedis = new StudyRedis();
@@ -48,21 +50,41 @@ export async function createStudy(idVacancy: string, userId: string) {
         }
     }
 
-    const techStackComparison = await hundleStudyWithOpenAi.getImportantSkills(skills, experiences, vacancy);
-    const resumeCandidate = await hundleStudyWithOpenAi.createResumeCandidate(skills, experiences);
+    // Cobra a geração antes de chamar a IA; se algo falhar os créditos são estornados
+    const spend = await spendCredits(userId, "STUDY", idVacancy);
 
-    const profile = {
-        "missing": techStackComparison?.missing ?? [], // Skills que esta ausente no perfil do usuario 
-        "strong": techStackComparison?.strong ?? [], // Skills fortes no perfil do usuario
-        "matchPercentage": techStackComparison?.matchPercentage ?? 0, // Porcentagem de match com o perfil do usuario
-        "resume": resumeCandidate || ""
+    if (!spend.ok) {
+        return {
+            status: false,
+            code: INSUFFICIENT_CREDITS_CODE,
+            insufficient: spend,
+            message: "Créditos insuficientes para gerar o estudo"
+        }
     }
 
-    const roadMapCandidate = await hundleStudyWithOpenAi.createRoadMapCandidate(vacancy, profile);
-
-    const listStudies: GeneratedStudy | null = roadMapCandidate ? JSON.parse(roadMapCandidate) : null
-
     try {
+        const techStackComparison = await hundleStudyWithOpenAi.getImportantSkills(skills, experiences, vacancy);
+        const resumeCandidate = await hundleStudyWithOpenAi.createResumeCandidate(skills, experiences);
+
+        const profile = {
+            "missing": techStackComparison?.missing ?? [], // Skills que esta ausente no perfil do usuario
+            "strong": techStackComparison?.strong ?? [], // Skills fortes no perfil do usuario
+            "matchPercentage": techStackComparison?.matchPercentage ?? 0, // Porcentagem de match com o perfil do usuario
+            "resume": resumeCandidate || ""
+        }
+
+        const roadMapCandidate = await hundleStudyWithOpenAi.createRoadMapCandidate(vacancy, profile);
+
+        const listStudies: GeneratedStudy | null = roadMapCandidate ? JSON.parse(roadMapCandidate) : null
+
+        if (!listStudies) {
+            await refundCredits(userId, spend.charge);
+            return {
+                status: false,
+                message: "Não conseguimos gerar o estudo agora. Seus créditos foram devolvidos, tente novamente em instantes."
+            }
+        }
+
         if (listStudies) {
             const study = await studyRepository.createStudyEmpty({
                 title: listStudies.study_name,
@@ -135,9 +157,10 @@ export async function createStudy(idVacancy: string, userId: string) {
         }
     } catch (e: any) {
         console.log(e);
+        await refundCredits(userId, spend.charge);
         return {
             status: false,
-            message: "Tivemos um erro na criação do estudo"
+            message: "Tivemos um erro na criação do estudo. Seus créditos foram devolvidos."
         }
     }
 }

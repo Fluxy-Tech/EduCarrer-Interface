@@ -1,4 +1,5 @@
 import { createStudy } from "@/app/services/study.swr";
+import { isInsufficientCredits } from "@/app/services/credits.swr";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -48,6 +49,8 @@ export default function CadsVacancy({ vacancy }: DialogVagasProps) {
             const res = await createStudy(id);
             ToastPersonalizado({ mensagem: res.message });
         } catch (e) {
+            // Sem créditos o diálogo de compra já é aberto pelo CreditsProvider
+            if (isInsufficientCredits(e)) return;
             ToastPersonalizado({ mensagem: "Ocorreu um erro durante a criação do seu estudo, tente novamente mais tarde." });
         } finally {
             setIsLoading(false);
@@ -141,7 +144,7 @@ export default function CadsVacancy({ vacancy }: DialogVagasProps) {
                         </div>
 
                         <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                            <TooltipPerso message="Gera uma trilha de estudos com níveis para esta vaga">
+                            <TooltipPerso message="Gera uma trilha de estudos com níveis para esta vaga (2.000 créditos)">
                                 <Button
                                     onClick={() => handleCreateStudy(vacancy.id)}
                                     variant="outline"

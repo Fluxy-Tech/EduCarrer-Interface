@@ -20,6 +20,15 @@ model User {
   banReason     String?
   banExpires    DateTime?
 
+  // Créditos de IA: os do plano valem até planExpiresAt, os avulsos (extra) não expiram.
+  // Todo usuário novo ganha 2.000 créditos avulsos de boas-vindas
+  plan            String?
+  planCredits     Int       @default(0)
+  planExpiresAt   DateTime?
+  extraCredits    Int       @default(2000)
+  cpfCnpj         String?
+  asaasCustomerId String?   @unique
+
   accounts      Account[]
   sessions      Session[]
   skills        Skill[]
@@ -29,6 +38,10 @@ model User {
   resetPassWord ResetPassWord[]
   avaliationsVacancys AvaliationsVacancys[]
   history History[]
+  subscriptions Subscription[]
+  payments      Payment[]
+  creditTransactions CreditTransaction[]
+  vacancyFilter VacancyFilter?
 }
 
 model ResetPassWord {
@@ -294,4 +307,83 @@ model Messages {
   history    History  @relation(fields: [historyId], references: [id], onDelete: Cascade)
 
   @@index([historyId])
+}
+
+// Assinatura mensal de um plano no Asaas
+model Subscription {
+  id                  String    @id @default(cuid())
+  plan                String
+  value               Float
+  // PENDING (aguardando 1º pagamento), ACTIVE, OVERDUE, CANCELED
+  status              String    @default("PENDING")
+  asaasSubscriptionId String    @unique
+
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  canceledAt          DateTime?
+
+  payments            Payment[]
+
+  @@index([userId, status])
+}
+
+// Cobranças do Asaas (mensalidades da assinatura e compras de créditos avulsos)
+model Payment {
+  id             String    @id @default(cuid())
+  asaasPaymentId String    @unique
+  // SUBSCRIPTION ou CREDITS
+  type           String
+  plan           String?
+  packageId      String?
+  credits        Int
+  value          Float
+  // Status do Asaas: PENDING, RECEIVED, CONFIRMED, OVERDUE, REFUNDED, DELETED...
+  status         String    @default("PENDING")
+  invoiceUrl     String?
+  dueDate        DateTime?
+  paidAt         DateTime?
+  // Garante que os créditos de uma cobrança são liberados uma única vez
+  credited       Boolean   @default(false)
+
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+// Extrato de créditos: positivo é entrada, negativo é consumo. balance é o saldo total depois do lançamento
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  amount      Int
+  // WELCOME, PLAN_RENEWAL, PURCHASE, VACANCY_REFRESH, STUDY, AGENT_MESSAGE, REFUND
+  reason      String
+  description String?
+  referenceId String?
+  balance     Int
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// Última filtragem de vagas feita pela IA para o usuário (refeita grátis a cada 3 dias)
+model VacancyFilter {
+  id          String   @id @default(cuid())
+  vacancyIds  String[]
+  filteredAt  DateTime @default(now())
+
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

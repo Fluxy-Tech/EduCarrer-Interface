@@ -2,6 +2,7 @@ import { HistoryRepository } from "@/lib/repositories/history";
 import { HundleAgentWithOpenAi } from "@/lib/services/hundleAgentWithOpenAi";
 import { getStudyById } from "@/lib/services/study";
 import { HistoryDTO } from "@/lib/interfaces/history.interface";
+import { refundCredits, spendCredits } from "@/lib/services/credits";
 
 const historyRepository = new HistoryRepository();
 const hundleAgentWithOpenAi = new HundleAgentWithOpenAi();
@@ -76,6 +77,13 @@ export async function sendMessageToAgent(userId: string, text: string, studyId: 
         return { status: false, message: "Estudo não encontrado", messages: [] };
     }
 
+    // Cada mensagem enviada consome créditos; se a IA não responder, devolvemos
+    const spend = await spendCredits(userId, "AGENT_MESSAGE", studyId);
+
+    if (!spend.ok) {
+        return { status: false, message: "Créditos insuficientes", messages: [], insufficient: spend };
+    }
+
     let history: HistoryDTO | null = await historyRepository.getLastHistory(userId, studyId);
 
     if (!history || history.stopConversation) {
@@ -90,15 +98,22 @@ export async function sendMessageToAgent(userId: string, text: string, studyId: 
 
     const lastMessages = await historyRepository.getLastMessages(history.id, AGENT_CONTEXT_MESSAGES);
 
-    const answer = await hundleAgentWithOpenAi.answer(
-        lastMessages.map((m) => ({ role: m.isBot ? "assistant" : "user", content: m.text })),
-        context.study
-    );
+    let answer: string | null | undefined = null;
+
+    try {
+        answer = await hundleAgentWithOpenAi.answer(
+            lastMessages.map((m) => ({ role: m.isBot ? "assistant" : "user", content: m.text })),
+            context.study
+        );
+    } catch (e) {
+        console.error(e);
+    }
 
     if (!answer) {
+        await refundCredits(userId, spend.charge);
         return {
             status: false,
-            message: "Não conseguimos responder agora, tente novamente em instantes",
+            message: "Não conseguimos responder agora, tente novamente em instantes. Seus créditos foram devolvidos.",
             historyId: history.id,
             messages: [userMessage]
         };

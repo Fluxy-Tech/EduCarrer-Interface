@@ -3,6 +3,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { AuthProvider } from "@/components/auth-provider"
+import { CreditsProvider } from "@/components/credits/credits-provider"
 
 interface AppShellProps {
   eyebrow: string
@@ -15,6 +16,7 @@ interface AppShellProps {
 export function AppShell({ eyebrow, title, description, children }: AppShellProps) {
   return (
     <AuthProvider>
+      <CreditsProvider>
       <SidebarProvider>
         <div className="flex min-h-screen w-full bg-sky">
           <AppSidebar />
@@ -39,6 +41,7 @@ export function AppShell({ eyebrow, title, description, children }: AppShellProp
           </main>
         </div>
       </SidebarProvider>
+      </CreditsProvider>
     </AuthProvider>
   )
 }

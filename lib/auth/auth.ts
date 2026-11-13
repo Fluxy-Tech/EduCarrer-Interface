@@ -4,6 +4,7 @@ import { admin } from "better-auth/plugins";
 import { prisma } from "../prisma";
 import nodemailer from "nodemailer";
 import { ResetPassword } from "@/lib/services/resetPassword";
+import { registerWelcomeCredits } from "@/lib/services/credits";
 
 const PORT = process.env.PORT ?? "8051"
 
@@ -30,6 +31,16 @@ export const auth = betterAuth({
       console.log(`Senha do usuario alterada com sucesso: ${user.email}`);
     },
     requireEmailVerification: false,
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        // Novo usuário já nasce com os créditos de boas-vindas (default da coluna); aqui só registramos no extrato
+        after: async (user) => {
+          await registerWelcomeCredits(user.id);
+        },
+      },
+    },
   },
   plugins: [
     admin({

@@ -5,6 +5,8 @@ export interface ResultGetVacancys {
     status: boolean
     vacancys: Vacancy[]
     message: string
+    filteredAt?: string | null
+    nextFreeRefreshAt?: string | null
 }
 
 export interface ResultCreateOrUpdateVacancy {
@@ -54,10 +56,15 @@ const fetcher = async (url: string): Promise<ResultGetVacancys> => {
 const URL = process.env.NEXT_PUBLIC_AMBIENTE == "dev" ? "http://localhost:8051" : "https://educarrer.fluxytechnologies.com.br"
 
 export function useVacancys() {
-    const { data, error, isLoading, mutate } = useSWR(`${URL}/api/vacancy`, fetcher);
+    const { data, error, isLoading, mutate } = useSWR(`${URL}/api/vacancy`, fetcher, {
+        // A filtragem fica salva no servidor; não precisa refazer a consulta a cada foco da aba
+        revalidateOnFocus: false,
+    });
 
     return {
         vacancys: data?.vacancys || [],
+        filteredAt: data?.filteredAt ?? null,
+        nextFreeRefreshAt: data?.nextFreeRefreshAt ?? null,
         isLoading,
         isError: error,
         message: data?.message,
