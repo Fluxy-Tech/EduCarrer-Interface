@@ -20,7 +20,15 @@ import {
   Star,
   Target,
   Trophy,
+  Code2,
+  Download,
+  Globe,
+  Linkedin,
+  LockOpen,
+  Medal,
+  UserSearch,
 } from "lucide-react"
+import { RANK_BONUS_LINKS, RANK_BONUS_RESUME } from "@/lib/users/roles"
 import { Button } from "@/components/ui/button"
 import { BrandMark } from "@/components/brand-mark"
 import { HomeHeader } from "@/components/home/home-header"
@@ -32,8 +40,10 @@ import {
 } from "@/components/ui/accordion"
 import {
   CREDIT_COSTS,
+  CANDIDATE_UNLOCK_DAYS,
   CREDIT_PACKAGES,
   PLANS,
+  RECRUITER_PLANS,
   VACANCY_FREE_REFRESH_DAYS,
   WELCOME_CREDITS,
   formatCredits,
@@ -107,6 +117,11 @@ const features = [
     title: "Agente de carreira",
     text: "Tire dúvidas sobre carreira, entrevistas e seu perfil com um agente disponível a qualquer hora.",
   },
+  {
+    icon: UserSearch,
+    title: "Seja encontrado por recrutadores",
+    text: "Seu desempenho nas trilhas vira pontos em um ranking que recrutadores consultam por área e stack.",
+  },
 ]
 
 const studySections = ["resume", "strengths", "lacunasaDevelop", "studyPlans", "finalTip"] as const
@@ -157,6 +172,14 @@ const faq = [
   {
     q: "Como funciona o pagamento?",
     a: "Os pagamentos são processados pelo Asaas, com PIX, cartão de crédito ou boleto. A assinatura pode ser cancelada quando você quiser.",
+  },
+  {
+    q: "Recrutadores conseguem me encontrar?",
+    a: `Sim. Recrutadores veem um ranking por área e stack com o seu nome e pontuação (XP dos desafios + ${RANK_BONUS_LINKS} pontos com LinkedIn ou portfólio + ${RANK_BONUS_RESUME} pontos com o currículo liberado). Seus links, currículo, habilidades, experiências e estudos só aparecem para o recrutador que desbloquear o seu perfil. O currículo só é compartilhado se você autorizar.`,
+  },
+  {
+    q: "Sou recrutador. Como funciona?",
+    a: `Você assina o plano Recrutador (${formatPrice(RECRUITER_PLANS[0].price)}/mês com ${formatCredits(RECRUITER_PLANS[0].credits)} créditos), filtra candidatos por área ou stack e desbloqueia quem interessar por ${formatCredits(CREDIT_COSTS.CANDIDATE_UNLOCK)} créditos. O acesso vale ${CANDIDATE_UNLOCK_DAYS} dias. O perfil de recrutador é liberado pela nossa equipe.`,
   },
   {
     q: "Como a plataforma sabe o que eu preciso estudar?",
@@ -497,6 +520,113 @@ export default function Home() {
             </ul>
             <div className="bg-ink px-6 py-4 text-sm text-white/70">
               Exemplo: com o plano <strong className="text-white">{PLANS[1].name}</strong> você gera {Math.floor(PLANS[1].credits / 2 / CREDIT_COSTS.STUDY)} estudos e ainda envia {formatCredits(Math.floor(PLANS[1].credits / 2 / CREDIT_COSTS.AGENT_MESSAGE))} mensagens ao tutor no mês.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Recrutadores */}
+      <section id="recrutadores" className="scroll-mt-20 bg-ink-gradient py-20 text-white lg:py-28">
+        <div className="mx-auto max-w-[1200px] px-4 sm:px-6">
+          <SectionHeading
+            light
+            eyebrow="Para recrutadores"
+            title={<>Encontre quem <em className="text-gold-gradient">provou</em> que aprende</>}
+            text="Um ranking de candidatos ordenado pelo desempenho real nas trilhas de estudo, filtrado pela área e pela stack que a sua vaga precisa."
+          />
+
+          <div className="mt-14 grid gap-6 lg:grid-cols-[1fr_1.05fr] lg:items-start">
+            <div className="flex flex-col gap-4">
+              {[
+                {
+                  icon: Code2,
+                  title: "Filtre por área ou stack",
+                  text: "Backend, Frontend, FullStack, Dados e mais, ou busque pela tecnologia: React, Node, Python...",
+                },
+                {
+                  icon: Lock,
+                  title: "Veja o ranking",
+                  text: "Nome, patente e pontuação de cada candidato ficam visíveis para você comparar.",
+                },
+                {
+                  icon: LockOpen,
+                  title: `Desbloqueie por ${formatCredits(CREDIT_COSTS.CANDIDATE_UNLOCK)} créditos`,
+                  text: `Acesso por ${CANDIDATE_UNLOCK_DAYS} dias a LinkedIn, portfólio, currículo, habilidades, experiências e estudos concluídos.`,
+                },
+              ].map((step, i) => (
+                <div key={step.title} className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-gold/15 text-gold">
+                    <step.icon className="size-5" />
+                  </span>
+                  <div>
+                    <p className="text-[11px] font-bold text-white/35">PASSO {i + 1}</p>
+                    <p className="font-bold">{step.title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-white/60">{step.text}</p>
+                  </div>
+                </div>
+              ))}
+
+              {RECRUITER_PLANS.map((plan) => (
+                <div key={plan.id} className="flex flex-col gap-4 rounded-3xl bg-white p-6 text-ink sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="eyebrow text-brand">Plano {plan.name}</p>
+                    <p className="mt-1 font-display text-4xl tabular-nums">
+                      {formatPrice(plan.price)}<span className="text-base text-muted-foreground">/mês</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatCredits(plan.credits)} créditos · até {Math.floor(plan.credits / CREDIT_COSTS.CANDIDATE_UNLOCK)} candidatos desbloqueados por mês
+                    </p>
+                  </div>
+                  <Button asChild variant="gold" className="shrink-0">
+                    <Link href="/singup">Quero recrutar</Link>
+                  </Button>
+                </div>
+              ))}
+              <p className="text-xs text-white/45">O perfil de recrutador é liberado pela nossa equipe depois do cadastro.</p>
+            </div>
+
+            {/* Prévia do ranking */}
+            <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-lift backdrop-blur-md sm:p-6">
+              <div className="flex items-center justify-between">
+                <p className="eyebrow text-gold">Ranking · Backend · Node</p>
+                <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/70">exemplo</span>
+              </div>
+              <ol className="mt-5 flex flex-col gap-2">
+                {[
+                  { name: "Marina Alves", rank: "Especialista", points: 1240, unlocked: true },
+                  { name: "Rafael Costa", rank: "Analista", points: 980, unlocked: false },
+                  { name: "Juliana Prado", rank: "Analista", points: 860, unlocked: false },
+                ].map((c, i) => (
+                  <li key={c.name} className={cn("flex items-center gap-3 rounded-2xl border p-3", c.unlocked ? "border-success/40 bg-success/10" : "border-white/10 bg-white/[0.03]")}>
+                    <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", i === 0 ? "bg-gold text-white" : "bg-white/10 text-white/80")}>
+                      <Medal className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{c.name}</p>
+                      <p className="text-[11px] text-white/50">{c.rank} · {c.points.toLocaleString("pt-BR")} pontos</p>
+                    </div>
+                    {c.unlocked ? (
+                      <span className="flex gap-1.5 text-white/80">
+                        <Linkedin className="size-4" /><Globe className="size-4" /><Download className="size-4" />
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 rounded-lg bg-gold/20 px-2 py-1 text-[11px] font-bold text-gold">
+                        <Lock className="size-3" /> {formatCredits(CREDIT_COSTS.CANDIDATE_UNLOCK)}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+
+              {/* Para candidatos */}
+              <div className="mt-5 rounded-2xl bg-white/[0.06] p-4">
+                <p className="text-sm font-bold">É candidato? Suba no ranking</p>
+                <ul className="mt-2 flex flex-col gap-1.5 text-xs text-white/65">
+                  <li className="flex gap-2"><Trophy className="size-4 shrink-0 text-gold" /> Cada acerto nos desafios vale {XP_PER_CORRECT_ANSWER} pontos</li>
+                  <li className="flex gap-2"><Linkedin className="size-4 shrink-0 text-gold" /> +{RANK_BONUS_LINKS} pontos ao cadastrar LinkedIn ou portfólio no perfil</li>
+                  <li className="flex gap-2"><Download className="size-4 shrink-0 text-gold" /> +{RANK_BONUS_RESUME} pontos ao liberar o currículo para recrutadores</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

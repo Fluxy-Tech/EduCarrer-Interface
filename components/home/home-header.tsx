@@ -5,12 +5,14 @@ import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BrandMark } from "@/components/brand-mark"
 import { useSession } from "@/lib/auth/auth-client"
+import { getHomeForRole } from "@/lib/users/roles"
 
 const links = [
   { href: "#funcionalidades", label: "Funcionalidades" },
   { href: "#ensino", label: "Como ensinamos" },
   { href: "#planos", label: "Planos" },
   { href: "#creditos", label: "Créditos" },
+  { href: "#recrutadores", label: "Recrutadores" },
 ]
 
 // Cabeçalho da apresentação: quem já está logado vai direto para a plataforma
@@ -35,7 +37,7 @@ export function HomeHeader() {
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
           {!isPending && session ? (
             <Button asChild variant="gold" size="sm">
-              <Link href="/jobs">Ir para a plataforma <ArrowRight /></Link>
+              <Link href={getHomeForRole(session.user.role)}>Ir para a plataforma <ArrowRight /></Link>
             </Button>
           ) : (
             <>
