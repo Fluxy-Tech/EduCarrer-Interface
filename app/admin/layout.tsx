@@ -1,17 +1,8 @@
-import { AppShell } from "@/components/app-shell"
-
-export default function DashboardLayout({
+// Cada tela do admin (Vagas e Métricas) define seu próprio cabeçalho no layout da rota
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <AppShell
-      eyebrow="Administração"
-      title="Painel administrativo"
-      description="Gerencie as vagas cadastradas e acompanhe a qualidade das recomendações."
-    >
-      {children}
-    </AppShell>
-  )
+  return children
 }

@@ -10,7 +10,10 @@ import {
   ChevronsUpDown,
   Coins,
   Crown,
+  ChevronDown,
+  ChartNoAxesCombined,
 } from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useCredits } from "@/app/services/credits.swr"
 import { formatCredits } from "@/lib/credits/config"
 import Link from "next/link"
@@ -27,6 +30,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { authClient, useSession } from "@/lib/auth/auth-client"
 import {
@@ -66,6 +72,11 @@ const menuItems = [
   },
 ]
 
+const adminItems = [
+  { title: "Vagas", url: "/admin/vagas", icon: BriefcaseBusiness },
+  { title: "Métricas", url: "/admin/metricas", icon: ChartNoAxesCombined },
+]
+
 export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
@@ -77,20 +88,16 @@ export function AppSidebar() {
     router.push("/singin")
   }
 
-  const items = React.useMemo(() => {
-    const baseItems = [...menuItems]
+  const items = menuItems
+  const isAdmin = session?.user?.role === "admin"
+  const adminActive = pathname === "/admin" || pathname.startsWith("/admin/")
 
-    if (session?.user?.role === "admin") {
-      baseItems.push({
-        title: "Admin",
-        description: "Gestão da plataforma",
-        url: "/admin",
-        icon: ShieldUser,
-      })
-    }
+  // O grupo Admin abre sozinho quando o usuário está em uma tela do admin
+  const [adminOpen, setAdminOpen] = React.useState(adminActive)
 
-    return baseItems
-  }, [session?.user?.role])
+  React.useEffect(() => {
+    if (adminActive) setAdminOpen(true)
+  }, [adminActive])
 
   const initials = (session?.user?.name || "U")
     .split(" ")
@@ -141,6 +148,62 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 )
               })}
+
+              {isAdmin && (
+                <Collapsible open={adminOpen} onOpenChange={setAdminOpen} asChild>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        isActive={adminActive}
+                        className={
+                          adminActive
+                            ? "cursor-pointer relative h-14 px-3 rounded-xl bg-white/[0.07]! text-white! hover:bg-white/10!"
+                            : "cursor-pointer relative h-14 px-3 rounded-xl text-white/60 hover:bg-white/5! hover:text-white!"
+                        }
+                      >
+                        {adminActive && (
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-[3px] rounded-r-full bg-gold" />
+                        )}
+                        <span className={`grid place-items-center size-9 rounded-lg transition-colors ${adminActive ? "bg-brand text-white" : "bg-white/5 text-white/70"}`}>
+                          <ShieldUser className="size-4!" />
+                        </span>
+                        <span className="flex flex-col leading-tight pl-1">
+                          <span className="text-sm font-semibold">Admin</span>
+                          <span className="text-[11px] text-white/40">Gestão da plataforma</span>
+                        </span>
+                        <ChevronDown className={`ml-auto size-4 text-white/40 transition-transform duration-200 ${adminOpen ? "rotate-180" : ""}`} />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+
+                    <CollapsibleContent>
+                      <SidebarMenuSub className="mx-0 ml-7 mt-1.5 gap-1 border-white/10 px-2">
+                        {adminItems.map((sub) => {
+                          const subActive = pathname === sub.url || pathname.startsWith(`${sub.url}/`)
+
+                          return (
+                            <SidebarMenuSubItem key={sub.url}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={subActive}
+                                className={
+                                  subActive
+                                    ? "h-10 rounded-lg bg-white/[0.07]! text-white! font-semibold"
+                                    : "h-10 rounded-lg text-white/55 hover:bg-white/5! hover:text-white!"
+                                }
+                              >
+                                <Link href={sub.url}>
+                                  <sub.icon className={`size-4! ${subActive ? "text-gold!" : "text-white/50!"}`} />
+                                  <span className="text-sm">{sub.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          )
+                        })}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

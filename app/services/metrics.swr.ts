@@ -79,3 +79,59 @@ export function useMetricsAdmin() {
         refresh: mutate
     }
 }
+
+export interface FunnelStage {
+    key: "users" | "withStudy" | "half" | "completed";
+    label: string;
+    count: number;
+    percentOfUsers: number;
+    percentOfPrevious: number | null;
+}
+
+export interface StudyEvolutionMetrics {
+    funnel: FunnelStage[];
+    totals: {
+        users: number;
+        studies: number;
+        studiesPerUserWithStudy: number;
+        averageProgress: number;
+        studiesHalf: number;
+        studiesCompleted: number;
+        levelsCompleted: number;
+    };
+    distribution: { label: string; count: number }[];
+    evolution: {
+        month: string;
+        newUsers: number;
+        studiesCreated: number;
+        levelsCompleted: number;
+        studiesCompleted: number;
+    }[];
+}
+
+interface ResultGetStudyEvolution {
+    status: boolean;
+    metrics: StudyEvolutionMetrics | null;
+    message: string;
+}
+
+const fetcherStudyEvolution = async (url: string): Promise<ResultGetStudyEvolution> => {
+    const { data } = await axios.get(url, {
+        withCredentials: true
+    })
+    return data
+}
+
+// Evolução dos estudos dos usuários no painel de métricas do admin
+export function useStudyEvolutionMetrics(months: number) {
+    const { data, error, isLoading, mutate } = useSWR(`${URL}/api/metrics/admin/studies?months=${months}`, fetcherStudyEvolution, {
+        keepPreviousData: true,
+    });
+
+    return {
+        metrics: data?.metrics ?? null,
+        isLoading,
+        isError: error,
+        refresh: mutate
+    }
+}
