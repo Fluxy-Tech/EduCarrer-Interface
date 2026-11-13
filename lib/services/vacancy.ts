@@ -117,6 +117,11 @@ export async function getVacancysById(id: string) {
     return await vacancysRepositoryDataBase.getVacancysById(id);
 }
 
+// Admin sempre lê direto do banco para editar a versão mais recente da vaga
+export async function getVacancyByIdAdmin(id: string) {
+    return await vacancysRepositoryDataBase.getVacancysById(id);
+}
+
 export async function createVacancy(data: CreateVacancyData) {
     await clearVacancysCache();
     return await vacancysRepositoryDataBase.createVacancy(data);

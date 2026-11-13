@@ -10,7 +10,7 @@ import { Building2, MapPin, HandCoins, Blocks, PenBox, Clock3 } from "lucide-rea
 
 import { useState } from "react";
 
-import { DialogVacancyUpdate } from "@/components/dialog/dialog-vacancy.update";
+import Link from "next/link";
 import { getTimeAgo, getVacancyLabel } from "@/components/cards/card-vacancy";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +36,6 @@ interface DialogVagasProps {
 }
 export default function CadsVacancyAdmin({ vacancy }: DialogVagasProps) {
     const [open, setOpen] = useState(false);
-    const [openEdit, setOpenEdit] = useState(false);
 
     const descriptionParts = (vacancy.description ?? "").split("[QB]");
 
@@ -115,14 +114,10 @@ export default function CadsVacancyAdmin({ vacancy }: DialogVagasProps) {
                     ))}
                 </div>
 
-                <DialogVacancyUpdate vacancy={vacancy} open={openEdit} onOpenChange={setOpenEdit} />
-
-                <Button
-                    variant="create"
-                    className="w-full sm:w-auto shrink-0"
-                    onClick={() => setOpenEdit(true)}
-                >
-                    <PenBox /> Editar vaga
+                <Button asChild variant="create" className="w-full sm:w-auto shrink-0">
+                    <Link href={`/admin/vagas/update/${vacancy.id}`}>
+                        <PenBox /> Editar vaga
+                    </Link>
                 </Button>
             </div>
         </article>

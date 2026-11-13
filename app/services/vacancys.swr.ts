@@ -1,4 +1,4 @@
-import useSWR from 'swr';
+import useSWR, { mutate as globalMutate } from 'swr';
 import axios from 'axios';
 
 export interface ResultGetVacancys {
@@ -93,9 +93,37 @@ export async function createVacancy(data: CreateOrUpdateVacancy): Promise<Result
 
 
 export async function updateVacancy(id: string, data: CreateOrUpdateVacancy): Promise<ResultCreateOrUpdateVacancy> {
-    const { data: response } = await axios.put(`${URL}/api/vacancy/${id}`, data, {
+    const { data: response } = await axios.put(`${URL}/api/vacancy/admin/${id}`, data, {
         withCredentials: true
     });
     return response;
+}
+
+const fetcherVacancy = async (url: string): Promise<ResultCreateOrUpdateVacancy> => {
+    const { data } = await axios.get(url, {
+        withCredentials: true,
+        validateStatus: (status) => status < 500
+    })
+    return data
+}
+
+// Vaga pelo id para a tela de edição do admin
+export function useVacancyAdmin(id: string | undefined) {
+    const { data, error, isLoading, mutate } = useSWR(id ? `${URL}/api/vacancy/admin/${id}` : null, fetcherVacancy, {
+        revalidateOnFocus: false,
+    });
+
+    return {
+        vacancy: data?.vacancy ?? null,
+        isLoading,
+        isError: error,
+        message: data?.message,
+        refresh: mutate
+    }
+}
+
+// Atualiza a lista de vagas do admin depois de criar ou editar
+export function refreshVacancysAdmin() {
+    return globalMutate(`${URL}/api/vacancy/admin`);
 }
 

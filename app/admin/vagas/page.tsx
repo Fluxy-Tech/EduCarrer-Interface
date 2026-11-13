@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import CadsVacancyAdmin from "@/components/cards/card-vacancy-admin";
 import CharRecomedacaoDeVagas from "@/components/chart/acuracia-recomendacoes";
 import CharGeracaoDeEstudo from "@/components/chart/acuracia-geracao-de-estudos";
-import { DialogVacncyCreate } from "@/components/dialog/dialog-vacancy.create";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useMetricsAdmin } from "@/app/services/metrics.swr";
 
 import {
@@ -88,7 +90,9 @@ export default function DashboardPage() {
               <h2 className="font-display text-3xl text-ink">Vagas cadastradas</h2>
               <p className="text-sm text-muted-foreground">Edite, desative ou cadastre novas vagas na plataforma</p>
             </div>
-            <DialogVacncyCreate />
+            <Button asChild variant="dashed">
+              <Link href="/admin/vagas/create"><Plus size={16} /> Adicionar vaga</Link>
+            </Button>
           </div>
 
           {/* Filtros */}
